@@ -4,7 +4,7 @@ project(arap_morph)
 file(GLOB headers "${CMAKE_SOURCE_DIR}/src/*.h")
 file(GLOB sources "${CMAKE_SOURCE_DIR}/src/*.cpp")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
-set(vdb openvdb)
+set(vdb openvdb tbb Half)
 set(openmesh OpenMeshCore)
 
 set(CMAKE_BUILD_TYPE Release)
