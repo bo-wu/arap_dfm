@@ -54,7 +54,6 @@ void VolumeObject::initial_volume()
 //	grid = mesh2volume.distGridPtr();
 	grid = openvdb::tools::meshToLevelSet<openvdb::FloatGrid>(grid->transform(), points, triangles, float(openvdb::LEVEL_SET_HALF_WIDTH));
 
-
 } //end of initial_volume
 
 
@@ -138,3 +137,45 @@ void VolumeObject::write_grid(std::string name)
 	file.write(grids);
 	file.close();
 }
+
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  calc_vector_field
+ *  Description:  
+ * =====================================================================================
+ */
+void VolumeObject::calc_vector_field()
+{
+	openvdb::FloatGrid::Accessor accessor = grid->getAccessor();
+	std::cout<<"leaf num "<<grid->tree().leafCount()<<std::endl;
+	std::cout<<"active leaf voxel "<<grid->tree().activeLeafVoxelCount()<<"\ninactive leaf voxel "<<grid->tree().inactiveLeafVoxelCount()<<"\n";
+	int inactive=0, active=0, total=0;
+	for(openvdb::FloatGrid::ValueOnCIter iter=grid->cbeginValueOn(); iter.test(); ++iter)	
+	{
+		active++;
+		if(iter.getLevel() != 0)
+			std::cout<<"im an active tile\n";
+	}
+	for(openvdb::FloatGrid::ValueOffIter iter=grid->beginValueOff(); iter.test(); ++iter)
+	{
+		if(iter.getLevel() != 0)
+			continue;
+		else
+			inactive++;
+		/* 
+		if(iter.getLevel() != 0 && accessor)
+			std::cout<<"im an inactive tile\n";
+			*/
+	}
+	for(openvdb::FloatGrid::ValueAllIter iter=grid->beginValueAll(); iter.test(); ++iter)
+	{
+		total++;
+		/*
+		if(iter.getLevel() != 0)
+			std::cout<<"im an total tile\n";
+			*/
+	}
+	std::cout<<"my active is "<< active <<"\ninactive is "<<inactive<<std::endl;
+	std::cout<<"total num "<<total<<std::endl;
+}		/* -----  end of function calc_vector_field  ----- */

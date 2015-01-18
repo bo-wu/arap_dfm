@@ -21,6 +21,7 @@ struct Morph
 	Morph();
 	~Morph();
 	VolumeObject source, target;
+	std::vector<std::pair<int, int> > anchor_pairs;
 	void start_morph();
 };
 

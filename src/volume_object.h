@@ -24,13 +24,16 @@ struct VolumeObject
 	openvdb::FloatGrid::Ptr grid;
 	std::vector<openvdb::Vec3s> points;
 	std::vector<openvdb::Vec3I> triangles;
+	std::vector<int> anchors;
 
 	VolumeObject();
 	VolumeObject(std::string name);
+	~VolumeObject();
 	void initial_volume();
+	//compute vector field on anchor points
+	void calc_vector_field();
 	void read_mesh();
 	void write_grid(std::string name);
-	~VolumeObject();
 
 };
 
