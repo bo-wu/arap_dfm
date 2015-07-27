@@ -12,8 +12,8 @@
  * =====================================================================================
  */
 
-#ifndef TYPES_H_
-#define TYPES_H_
+#ifndef DEF_TYPES_H_
+#define DEF_TYPES_H_
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
@@ -21,7 +21,10 @@
 typedef double Real;
 
 typedef Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic> MatrixXr;
+typedef Eigen::Matrix<Real, Eigen::Dynamic, 3> MatrixX3r;
+typedef Eigen::Matrix<Real, Eigen::Dynamic, 4> MatrixX4r;
 typedef Eigen::Matrix<Real, Eigen::Dynamic, 1> VectorXr;
+typedef Eigen::Matrix<Real, 1, Eigen::Dynamic> RowVectorXr;
 typedef Eigen::SparseMatrix<Real> SpMat;
 
 

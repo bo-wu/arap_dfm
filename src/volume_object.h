@@ -15,7 +15,7 @@
 #define VOLUME_OBJECT_H_
 #include <string>
 #include <openvdb/openvdb.h>
-#include "types.h"
+#include "def_types.h"
 
 struct VolumeObject
 {

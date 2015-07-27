@@ -18,6 +18,6 @@ int main(int argc, char** argv)
 {
 	VolumeObject vo(argv[1]);
 	vo.calc_vector_field();
-//	vo.write_grid(argv[1]);
+	vo.write_grid(argv[1]);
 	return 0;
 }

@@ -45,9 +45,10 @@ void VolumeObject::initial_volume()
 {
 	read_mesh();
 	grid = openvdb::FloatGrid::create(10.0);
-	openvdb::math::Transform::Ptr grid_transform = openvdb::math::Transform::createLinearTransform(0.005);
+	openvdb::math::Transform::Ptr grid_transform = openvdb::math::Transform::createLinearTransform(0.05);
 	grid->setTransform(grid_transform);
 	grid->setGridClass(openvdb::GRID_LEVEL_SET);
+	//grid->setGridClass(openvdb::GRID_FOG_VOLUME);
 	grid->setName("mesh_grid");
 //	openvdb::tools::MeshToVolume<openvdb::FloatGrid> mesh2volume(grid_transform);
 //	mesh2volume.convertToLeveSet(points, triangles);
@@ -88,7 +89,7 @@ void VolumeObject::read_mesh()
 	{
 		mesh.point(*v_it) = (mesh.point(*v_it) - bb_center) * scalar_max;
 		//fill points
-		for(int i=0; i<3; ++i)
+		for(int i=0; i < 3; ++i)
 		{
 			v_pos(i) = mesh.point(*v_it)[i];
 		}
