@@ -24,6 +24,7 @@ typedef Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic> MatrixXr;
 typedef Eigen::Matrix<Real, Eigen::Dynamic, 3> MatrixX3r;
 typedef Eigen::Matrix<Real, Eigen::Dynamic, 4> MatrixX4r;
 typedef Eigen::Matrix<Real, Eigen::Dynamic, 1> VectorXr;
+typedef Eigen::Matrix<Real, 3, 1> Vector3r;
 typedef Eigen::Matrix<Real, 1, Eigen::Dynamic> RowVectorXr;
 typedef Eigen::SparseMatrix<Real> SpMat;
 

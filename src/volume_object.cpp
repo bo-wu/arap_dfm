@@ -59,6 +59,7 @@ void VolumeObject::initial_volume()
 	grid = openvdb::tools::meshToLevelSet<openvdb::FloatGrid>(grid->transform(), points, triangles, float(openvdb::LEVEL_SET_HALF_WIDTH));
 
     interior_grid = openvdb::tools::sdfInteriorMask(*grid);
+    //make inside grid dense
     interior_grid->tree().voxelizeActiveTiles();
 } //end of initial_volume
 
@@ -76,11 +77,13 @@ void VolumeObject::test_volume()
     auto accessor = grid->getAccessor();
     for(auto iter=inside_grid->cbeginValueOn(); iter; ++iter)
     {
+        output_depth<<iter.getVoxelCount()<<" ";
         if(iter.isTileValue())
             output_depth<<"tile value ";
-        if(accessor.getValue() > 0.0)
+        if(accessor.getValue(iter.getCoord()) > 0.0)
             output_depth<<"bigger than 0 ";
-        output_depth<< accessor.getValue(iter.getCoord())<<"\n";
+        output_depth<< accessor.getValue(iter.getCoord())<<" coord ";
+        output_depth<< iter.getCoord()<<" world "<<grid->indexToWorld(iter.getCoord())<<std::endl;
     }
     output_depth.close();
     /*  
@@ -113,6 +116,71 @@ void VolumeObject::test_volume()
 	*/
 }
 
+void VolumeObject::set_anchors(std::vector<Vector3r>& anchors)
+{
+    mAnchors = anchors;
+}
+
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  construct_laplace_matrix
+ *  Description:  
+ * =====================================================================================
+ */
+void VolumeObject::construct_laplace_matrix ()
+{
+    //for sparse grid, should be activeVoxel + activeTile
+    auto voxelNum = interior_grid->tree().activeLeafVoxelCount();
+    auto anchorNum = mAnchors.size();
+    mLaplaceMatrix = MatrixXr::Zero(voxelNum+anchorNum, voxelNum);
+    mVoxelPosition = MatrixX3r::Zero(voxelNum, 3);
+    int k = 0;
+    for(auto iter=interior_grid->cbeginValueOn(); iter; ++iter, ++k)
+    {
+        auto voxelPos = grid->indexToWorld(iter.getCoord());
+        mVoxelPosition.row(k) << voxelPos[0], voxelPos[1], voxelPos[2];
+    }
+    mVoxelKDTree = kd_tree_type(3, mVoxelPosition);
+    mVoxelKDTree.index->buildIndex();
+    const size_t numClosest = 1;
+    size_t outIndex;
+    Real outDistance;
+    int degree;
+    openvdb::Coord v_coord;
+    // laplace matrix
+    k = 0;
+    for(auto iter=interior_grid->cbeginValueOn(); iter; ++iter, ++k)
+    {
+        v_coord = iter.getCoord();
+        degree = 0;
+        std::vector<size_t> neighborIndex;
+        for(int i=0; i < 3; ++i)
+            for(int j=-1; j <= 1; j+=2)
+        {
+            auto temp_coord = v_coord;
+            temp_coord[i] = v_coord[i] + 1*j;
+            if (interior_grid->tree().isValueOn(temp_coord))
+            {
+                ++degree;
+                auto voxelPos = grid->indexToWorld(temp_coord);
+                Vector3r vPos(voxelPos[0], voxelPos[1], voxelPos[2]);
+                mVoxelKDTree.query(vPos.data(), numClosest, &outIndex, &outDistance);
+                if(outDistance > 1.0e-5)
+                {
+                    std::cerr<<"Distance should be 0.0\n";
+                }
+                neighborIndex.push_back(outIndex);
+            }
+        }
+        mLaplaceMatrix(k, k) = degree;
+        for(auto idx : neighborIndex)
+        {
+            mLaplaceMatrix(k, idx) = -1;
+        }
+    }
+}		/* -----  end of function construct_laplace_matrix  ----- */
+
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  calc_vector_field
@@ -121,7 +189,11 @@ void VolumeObject::test_volume()
  */
 void VolumeObject::calc_vector_field()
 {
-    //test_volume();
+    test_volume();
+    for(auto anchor : mAnchors)
+    {
+        
+    }
 }		/* -----  end of function calc_vector_field  ----- */
 
 

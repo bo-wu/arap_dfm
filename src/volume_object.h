@@ -15,6 +15,7 @@
 #define VOLUME_OBJECT_H_
 #include <string>
 #include <openvdb/openvdb.h>
+#include <nanoflann.hpp>
 #include "def_types.h"
 
 struct VolumeObject
@@ -26,7 +27,11 @@ struct VolumeObject
     openvdb::BoolGrid::Ptr interior_grid;
 	std::vector<openvdb::Vec3s> points;
 	std::vector<openvdb::Vec3I> triangles;
-	std::vector<int> anchors;
+	std::vector<Vector3r> mAnchors;
+    MatrixXr mLaplaceMatrix;
+    MatrixX3r mVoxelPosition;
+    typedef nanoflann::KDTreeEigenMatrixAdaptor<MatrixXr> kd_tree_type;
+    kd_tree_type mVoxelKDTree;
 
 	VolumeObject();
 	VolumeObject(std::string mesh_name);
@@ -37,7 +42,8 @@ struct VolumeObject
 	void read_mesh();
 	void write_grid(std::string name);
     void test_volume();
-
+    void set_anchors(std::vector<Vector3r>& anchors);
+    void construct_laplace_matrix();
 };
 
 #endif
