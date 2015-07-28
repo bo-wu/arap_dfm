@@ -22,21 +22,23 @@ struct VolumeObject
 	TriMesh mesh;
 	std::string mesh_name;
 	openvdb::FloatGrid::Ptr grid;
+    //all active are inside tiles and voxel
+    openvdb::BoolGrid::Ptr interior_grid;
 	std::vector<openvdb::Vec3s> points;
 	std::vector<openvdb::Vec3I> triangles;
 	std::vector<int> anchors;
 
 	VolumeObject();
-	VolumeObject(std::string name);
+	VolumeObject(std::string mesh_name);
 	~VolumeObject();
 	void initial_volume();
 	//compute vector field on anchor points
 	void calc_vector_field();
 	void read_mesh();
 	void write_grid(std::string name);
+    void test_volume();
 
 };
-
 
 #endif
 

@@ -12,7 +12,7 @@ set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 set(CMAKE_CXX_FLAGS_RELEASE " ${CMAKE_CXX_FLAGS_RELEASE} -Wreturn-type -fopenmp")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -g -Wno-sign-compare")
-message("CMAKE_CXX_FLAGS_RELEASE is " ${CMAKE_CXX_FLAGS_RELEASE})
+#message("CMAKE_CXX_FLAGS_RELEASE is " ${CMAKE_CXX_FLAGS_RELEASE})
 
 include_directories(/usr/include/eigen3/ /usr/local/OpenVDB/include/)
 link_directories(/usr/local/OpenVDB/lib/)
