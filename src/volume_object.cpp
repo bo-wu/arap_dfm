@@ -49,7 +49,7 @@ void VolumeObject::initial_volume()
 {
 	read_mesh();
 	grid = openvdb::FloatGrid::create(10.0);
-	openvdb::math::Transform::Ptr grid_transform = openvdb::math::Transform::createLinearTransform(0.005);
+	openvdb::math::Transform::Ptr grid_transform = openvdb::math::Transform::createLinearTransform(0.1);
 	grid->setTransform(grid_transform);
 	grid->setGridClass(openvdb::GRID_LEVEL_SET);
 	grid->setName("mesh_grid");
@@ -128,7 +128,7 @@ void VolumeObject::set_anchors(std::vector<Vector3r>& anchors)
  *  Description:  
  * =====================================================================================
  */
-void VolumeObject::construct_laplace_matrix ()
+void VolumeObject::construct_laplace_matrix()
 {
     //for sparse grid, should be activeVoxel + activeTile
     auto voxelNum = interior_grid->tree().activeLeafVoxelCount();
@@ -136,13 +136,18 @@ void VolumeObject::construct_laplace_matrix ()
     mLaplaceMatrix = MatrixXr::Zero(voxelNum+anchorNum, voxelNum);
     mVoxelPosition = MatrixX3r::Zero(voxelNum, 3);
     int k = 0;
+    std::ofstream output_coord("coord.txt");
     for(auto iter=interior_grid->cbeginValueOn(); iter; ++iter, ++k)
     {
-        auto voxelPos = grid->indexToWorld(iter.getCoord());
-        mVoxelPosition.row(k) << voxelPos[0], voxelPos[1], voxelPos[2];
+        output_coord << iter.getCoord();
+        auto voxel_pos = grid->indexToWorld(iter.getCoord());
+        output_coord <<" "<<voxel_pos<<std::endl;
+        mVoxelPosition.row(k) << voxel_pos[0], voxel_pos[1], voxel_pos[2];
     }
-    mVoxelKDTree = kd_tree_type(3, mVoxelPosition);
-    mVoxelKDTree.index->buildIndex();
+    output_coord.close();
+    //find neighbor voxel index
+    kd_tree_type voxelKDTree(mVoxelPosition);
+    voxelKDTree.index->buildIndex();
     const size_t numClosest = 1;
     size_t outIndex;
     Real outDistance;
@@ -154,7 +159,7 @@ void VolumeObject::construct_laplace_matrix ()
     {
         v_coord = iter.getCoord();
         degree = 0;
-        std::vector<size_t> neighborIndex;
+        std::vector<int> neighborIndex;
         for(int i=0; i < 3; ++i)
             for(int j=-1; j <= 1; j+=2)
         {
@@ -163,12 +168,12 @@ void VolumeObject::construct_laplace_matrix ()
             if (interior_grid->tree().isValueOn(temp_coord))
             {
                 ++degree;
-                auto voxelPos = grid->indexToWorld(temp_coord);
-                Vector3r vPos(voxelPos[0], voxelPos[1], voxelPos[2]);
-                mVoxelKDTree.query(vPos.data(), numClosest, &outIndex, &outDistance);
+                auto voxel_pos = grid->indexToWorld(temp_coord);
+                Vector3r vPos(voxel_pos[0], voxel_pos[1], voxel_pos[2]);
+                voxelKDTree.query(vPos.data(), numClosest, &outIndex, &outDistance);
                 if(outDistance > 1.0e-5)
                 {
-                    std::cerr<<"Distance should be 0.0\n";
+                    //std::cerr<<"Distance "<<outDistance<<" should be 0.0\n";
                 }
                 neighborIndex.push_back(outIndex);
             }
@@ -179,6 +184,9 @@ void VolumeObject::construct_laplace_matrix ()
             mLaplaceMatrix(k, idx) = -1;
         }
     }
+    std::ofstream output_laplace("laplace.txt");
+    output_laplace << mLaplaceMatrix;
+    output_laplace.close();
 }		/* -----  end of function construct_laplace_matrix  ----- */
 
 /* 
@@ -190,6 +198,7 @@ void VolumeObject::construct_laplace_matrix ()
 void VolumeObject::calc_vector_field()
 {
     test_volume();
+    construct_laplace_matrix();
     for(auto anchor : mAnchors)
     {
         

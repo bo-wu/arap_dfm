@@ -15,7 +15,7 @@
 #define VOLUME_OBJECT_H_
 #include <string>
 #include <openvdb/openvdb.h>
-#include <nanoflann.hpp>
+#include "kdtree.h"
 #include "def_types.h"
 
 struct VolumeObject
@@ -30,8 +30,7 @@ struct VolumeObject
 	std::vector<Vector3r> mAnchors;
     MatrixXr mLaplaceMatrix;
     MatrixX3r mVoxelPosition;
-    typedef nanoflann::KDTreeEigenMatrixAdaptor<MatrixXr> kd_tree_type;
-    kd_tree_type mVoxelKDTree;
+    typedef nanoflann::KDTreeAdaptor<MatrixX3r, 3, nanoflann::metric_L2, size_t> kd_tree_type;
 
 	VolumeObject();
 	VolumeObject(std::string mesh_name);
