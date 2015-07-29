@@ -22,6 +22,8 @@
 #include <openvdb/tools/LevelSetUtil.h>
 #include "volume_object.h"
 
+#include <igl/min_quad_with_fixed.h>
+
 VolumeObject::VolumeObject()
 {
 	if (mesh_name.empty())
@@ -49,7 +51,7 @@ void VolumeObject::initial_volume()
 {
 	read_mesh();
 	grid = openvdb::FloatGrid::create(10.0);
-	openvdb::math::Transform::Ptr grid_transform = openvdb::math::Transform::createLinearTransform(0.1);
+	openvdb::math::Transform::Ptr grid_transform = openvdb::math::Transform::createLinearTransform(0.10);
 	grid->setTransform(grid_transform);
 	grid->setGridClass(openvdb::GRID_LEVEL_SET);
 	grid->setName("mesh_grid");
@@ -62,6 +64,7 @@ void VolumeObject::initial_volume()
     //make inside grid dense
     interior_grid->tree().voxelizeActiveTiles();
 } //end of initial_volume
+
 
 void VolumeObject::test_volume()
 {
@@ -97,23 +100,7 @@ void VolumeObject::test_volume()
 	std::cout<<"inside_grid active leaf voxel "<<inside_grid->tree().activeLeafVoxelCount()<<" inactive leaf voxel "<<inside_grid->tree().inactiveLeafVoxelCount()<<"\n";
     std::cout<<"            active tile num "<<grid->tree().activeTileCount()<<std::endl;
     std::cout<<"inside_grid active tile num "<<inside_grid->tree().activeTileCount()<<std::endl;
-
-	int inactive=0, active=0, total=0;
-	for(openvdb::FloatGrid::ValueOnCIter iter=grid->cbeginValueOn(); iter.test(); ++iter)	
-	{
-		active++;
-	}
-	for(openvdb::FloatGrid::ValueOffIter iter=grid->beginValueOff(); iter.test(); ++iter)
-	{
-		inactive++;
-	}
-	for(openvdb::FloatGrid::ValueAllIter iter=grid->beginValueAll(); iter.test(); ++iter)
-	{
-		total++;
-	}
-	std::cout<<"my active is "<< active <<"\ninactive is "<<inactive<<std::endl;
-	std::cout<<"total num "<<total<<std::endl;
-	*/
+		*/
 }
 
 void VolumeObject::set_anchors(std::vector<Vector3r>& anchors)
@@ -132,61 +119,64 @@ void VolumeObject::construct_laplace_matrix()
 {
     //for sparse grid, should be activeVoxel + activeTile
     auto voxelNum = interior_grid->tree().activeLeafVoxelCount();
+    voxel_num_ = voxelNum;
     auto anchorNum = mAnchors.size();
-    mLaplaceMatrix = MatrixXr::Zero(voxelNum+anchorNum, voxelNum);
+    mLaplaceMatrix = SpMat(voxelNum, voxelNum);
     mVoxelPosition = MatrixX3r::Zero(voxelNum, 3);
+    distance_vector_field = MatrixXr::Zero(voxelNum, anchorNum);
     int k = 0;
-    std::ofstream output_coord("coord.txt");
     for(auto iter=interior_grid->cbeginValueOn(); iter; ++iter, ++k)
     {
-        output_coord << iter.getCoord();
         auto voxel_pos = grid->indexToWorld(iter.getCoord());
-        output_coord <<" "<<voxel_pos<<std::endl;
         mVoxelPosition.row(k) << voxel_pos[0], voxel_pos[1], voxel_pos[2];
     }
-    output_coord.close();
+
     //find neighbor voxel index
-    kd_tree_type voxelKDTree(mVoxelPosition);
+    kd_tree_type voxelKDTree(3, mVoxelPosition);
     voxelKDTree.index->buildIndex();
-    const size_t numClosest = 1;
-    size_t outIndex;
+    long int outIndex;
     Real outDistance;
     int degree;
     openvdb::Coord v_coord;
+    Vector3r v_world_pos;
+    std::vector<Triplet> laplace_triplet_list;
+    laplace_triplet_list.reserve(7*voxelNum);
     // laplace matrix
     k = 0;
     for(auto iter=interior_grid->cbeginValueOn(); iter; ++iter, ++k)
     {
         v_coord = iter.getCoord();
         degree = 0;
-        std::vector<int> neighborIndex;
         for(int i=0; i < 3; ++i)
             for(int j=-1; j <= 1; j+=2)
-        {
-            auto temp_coord = v_coord;
-            temp_coord[i] = v_coord[i] + 1*j;
-            if (interior_grid->tree().isValueOn(temp_coord))
             {
-                ++degree;
-                auto voxel_pos = grid->indexToWorld(temp_coord);
-                Vector3r vPos(voxel_pos[0], voxel_pos[1], voxel_pos[2]);
-                voxelKDTree.query(vPos.data(), numClosest, &outIndex, &outDistance);
-                if(outDistance > 1.0e-5)
+                auto temp_coord = v_coord;
+                temp_coord[i] = v_coord[i] + 1*j;
+                if (interior_grid->tree().isValueOn(temp_coord))
                 {
-                    //std::cerr<<"Distance "<<outDistance<<" should be 0.0\n";
+                    ++degree;
+                    auto voxel_pos = grid->indexToWorld(temp_coord);
+                    v_world_pos<< voxel_pos[0], voxel_pos[1], voxel_pos[2];
+                    voxelKDTree.query(v_world_pos.data(), 1, &outIndex, &outDistance);
+                    if(outDistance > 1.0e-5)
+                    {
+                        std::cerr<<"Distance "<<outDistance<<" should be 0.0\n";
+                    }
+                    laplace_triplet_list.push_back(Triplet(k, outIndex, -1));
                 }
-                neighborIndex.push_back(outIndex);
             }
-        }
-        mLaplaceMatrix(k, k) = degree;
-        for(auto idx : neighborIndex)
-        {
-            mLaplaceMatrix(k, idx) = -1;
-        }
+        laplace_triplet_list.push_back(Triplet(k, k, degree));
     }
-    std::ofstream output_laplace("laplace.txt");
-    output_laplace << mLaplaceMatrix;
-    output_laplace.close();
+    mLaplaceMatrix.setFromTriplets(laplace_triplet_list.begin(), laplace_triplet_list.end());
+    // constrain part
+    constraint_index_ = VectorXi::Zero(anchorNum, 1);
+    k = 0;
+    for (auto a : mAnchors)
+    {
+        voxelKDTree.query(a.data(), 1, &outIndex, &outDistance);
+        constraint_index_(k) = outIndex;
+        ++k;
+    }
 }		/* -----  end of function construct_laplace_matrix  ----- */
 
 /* 
@@ -197,14 +187,25 @@ void VolumeObject::construct_laplace_matrix()
  */
 void VolumeObject::calc_vector_field()
 {
-    test_volume();
+//    test_volume();
     construct_laplace_matrix();
-    for(auto anchor : mAnchors)
+    igl::min_quad_with_fixed_data<Real> mqwf;
+    int num_row = constraint_index_.rows();
+    VectorXr B = VectorXr::Zero(voxel_num_, 1);
+    //Empyty constraints (except for constraint_index_/value)
+    VectorXr Beq;
+    SpMat Aeq;
+    igl::min_quad_with_fixed_precompute(mLaplaceMatrix, constraint_index_, Aeq, true, mqwf);
+    VectorXr D = VectorXr::Zero(voxel_num_, 1);
+    // solve equation with constraint
+    for(int i=0; i < num_row; ++i)
     {
-        
+        VectorXr constraint_value = VectorXr::Zero(num_row, 1);
+        constraint_value(i) = 1.0;
+        igl::min_quad_with_fixed_solve(mqwf, B, constraint_value, Beq, D);
+        distance_vector_field.col(i) = D;
     }
 }		/* -----  end of function calc_vector_field  ----- */
-
 
 
 ///////////////////////////////////////////

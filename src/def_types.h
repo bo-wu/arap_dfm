@@ -18,15 +18,21 @@
 #include <Eigen/Sparse>
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 
+//use igl static lib
+#define IGL_STATIC_LIBRARY
+
 typedef double Real;
 
 typedef Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic> MatrixXr;
 typedef Eigen::Matrix<Real, Eigen::Dynamic, 3> MatrixX3r;
+typedef Eigen::Matrix<Real, 3, Eigen::Dynamic> Matrix3Xr;
 typedef Eigen::Matrix<Real, Eigen::Dynamic, 4> MatrixX4r;
 typedef Eigen::Matrix<Real, Eigen::Dynamic, 1> VectorXr;
+typedef Eigen::Matrix<int, Eigen::Dynamic, 1> VectorXi;
 typedef Eigen::Matrix<Real, 3, 1> Vector3r;
 typedef Eigen::Matrix<Real, 1, Eigen::Dynamic> RowVectorXr;
 typedef Eigen::SparseMatrix<Real> SpMat;
+typedef Eigen::Triplet<Real> Triplet;
 
 
 struct MyTraits : public OpenMesh::DefaultTraits

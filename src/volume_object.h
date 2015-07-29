@@ -28,9 +28,13 @@ struct VolumeObject
 	std::vector<openvdb::Vec3s> points;
 	std::vector<openvdb::Vec3I> triangles;
 	std::vector<Vector3r> mAnchors;
-    MatrixXr mLaplaceMatrix;
+    SpMat mLaplaceMatrix;
+    int voxel_num_;
+    // constraint voxel index
+    VectorXi constraint_index_;
     MatrixX3r mVoxelPosition;
-    typedef nanoflann::KDTreeAdaptor<MatrixX3r, 3, nanoflann::metric_L2, size_t> kd_tree_type;
+    MatrixXr distance_vector_field;
+    typedef nanoflann::KDTreeEigenMatrixAdaptor<MatrixX3r, 3, nanoflann::metric_L2_Simple> kd_tree_type;
 
 	VolumeObject();
 	VolumeObject(std::string mesh_name);
