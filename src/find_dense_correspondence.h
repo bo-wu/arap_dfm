@@ -20,15 +20,9 @@ class EMD
 {
 public:
     EMD() {}
-    struct TsFlow
-    {
-        int from;
-        int to;
-        Real amount;
-    };
     Real compute_EMD();
     void min_cost_flow(VolumeObject &s, VolumeObject &t);
-    std::vector<TsFlow> result_flow_;
+    SpMat flow_matrix_;
 
 };
 #endif

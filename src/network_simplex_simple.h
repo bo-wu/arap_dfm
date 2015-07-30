@@ -290,6 +290,10 @@ template <typename T>
       ALTERING_LIST
     };
 
+    size_t get_costVector_maxsize()
+    {
+        return _cost.max_size();
+    }
   private:
 
     TEMPLATE_DIGRAPH_TYPEDEFS(GR);

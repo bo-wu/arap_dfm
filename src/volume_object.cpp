@@ -24,8 +24,9 @@
 
 #include <igl/min_quad_with_fixed.h>
 
-VolumeObject::VolumeObject()
+VolumeObject::VolumeObject(Real transform_scale)
 {
+    transform_scale_ = transform_scale;
 	if (mesh_name.empty())
 	{
 		std::cerr<<"mesh_name without initialization \n";
@@ -34,8 +35,9 @@ VolumeObject::VolumeObject()
 	initial_volume();
 }
 
-VolumeObject::VolumeObject(std::string name)
+VolumeObject::VolumeObject(std::string name, Real transform_scale)
 {
+    transform_scale_ = transform_scale;
 	mesh_name = name;
 	initial_volume();
 }
@@ -51,18 +53,17 @@ void VolumeObject::initial_volume()
 {
 	read_mesh();
 	grid = openvdb::FloatGrid::create(10.0);
-	openvdb::math::Transform::Ptr grid_transform = openvdb::math::Transform::createLinearTransform(0.10);
+	openvdb::math::Transform::Ptr grid_transform = openvdb::math::Transform::createLinearTransform(transform_scale_);
 	grid->setTransform(grid_transform);
 	grid->setGridClass(openvdb::GRID_LEVEL_SET);
 	grid->setName("mesh_grid");
-//	openvdb::tools::MeshToVolume<openvdb::FloatGrid> mesh2volume(grid_transform);
-//	mesh2volume.convertToLeveSet(points, triangles);
-//	grid = mesh2volume.distGridPtr();
 	grid = openvdb::tools::meshToLevelSet<openvdb::FloatGrid>(grid->transform(), points, triangles, float(openvdb::LEVEL_SET_HALF_WIDTH));
 
+    //std::cout<<"before subdivide " << grid->tree().activeTileCount()<<std::endl;
     interior_grid = openvdb::tools::sdfInteriorMask(*grid);
     //make inside grid dense
     interior_grid->tree().voxelizeActiveTiles();
+    //std::cout<<"after subdivide " << grid->tree().activeTileCount()<<std::endl;
 } //end of initial_volume
 
 
@@ -160,7 +161,7 @@ void VolumeObject::construct_laplace_matrix()
                     voxelKDTree.query(v_world_pos.data(), 1, &outIndex, &outDistance);
                     if(outDistance > 1.0e-5)
                     {
-                        std::cerr<<"Distance "<<outDistance<<" should be 0.0\n";
+                        //std::cerr<<"Distance "<<outDistance<<" should be 0.0\n";
                     }
                     laplace_triplet_list.push_back(Triplet(k, outIndex, -1));
                 }
@@ -169,7 +170,8 @@ void VolumeObject::construct_laplace_matrix()
     }
     mLaplaceMatrix.setFromTriplets(laplace_triplet_list.begin(), laplace_triplet_list.end());
     // constrain part
-    constraint_index_ = VectorXi::Zero(anchorNum, 1);
+    if (anchorNum > 0)
+        constraint_index_ = VectorXi::Zero(anchorNum, 1);
     k = 0;
     for (auto a : mAnchors)
     {
@@ -210,7 +212,7 @@ void VolumeObject::calc_vector_field()
 
 ///////////////////////////////////////////
 //read_mesh
-void VolumeObject::read_mesh()
+void VolumeObject::read_mesh(bool resize)
 {
 	if(!OpenMesh::IO::read_mesh(mesh, mesh_name))	
 	{
@@ -237,7 +239,10 @@ void VolumeObject::read_mesh()
 	openvdb::Vec3s v_pos;
 	for(v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it)
 	{
-		mesh.point(*v_it) = (mesh.point(*v_it) - bb_center) * scalar_max;
+        if(resize)
+        {
+            mesh.point(*v_it) = (mesh.point(*v_it) - bb_center) * scalar_max;
+        }
 		//fill points
 		for(int i=0; i < 3; ++i)
 		{
@@ -290,5 +295,4 @@ void VolumeObject::write_grid(std::string name)
 	file.write(grids);
 	file.close();
 }
-
 

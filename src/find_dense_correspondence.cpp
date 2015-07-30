@@ -13,9 +13,12 @@
  */
 #include <algorithm>
 #include <cmath>
+#include <iostream>
+#include <fstream>
 #include "find_dense_correspondence.h"
 #include "full_bipartitegraph.h"
 #include "network_simplex_simple.h"
+#include "def_types.h"
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -41,7 +44,9 @@ void EMD::min_cost_flow(VolumeObject &s, VolumeObject &t)
     typedef FullBipartiteDigraph Digraph;
     typedef NetworkSimplexSimple<Digraph, Real, Real, unsigned short int> MyNetwork;
     DIGRAPH_TYPEDEFS(FullBipartiteDigraph);
-
+    std::cout<<"s.voxel_num " << s.voxel_num_<< std::endl;
+    std::cout<<"t.voxel_num " << t.voxel_num_<< std::endl;
+//    std::cout<<"s.voxel_num * t.voxel_num = "<<s.voxel_num_ * t.voxel_num_<<std::endl;
     Digraph di(s.voxel_num_, t.voxel_num_);
     MyNetwork net(di, false);
     int arc_id = 0;
@@ -69,16 +74,35 @@ void EMD::min_cost_flow(VolumeObject &s, VolumeObject &t)
 
     auto ret = net.run(MyNetwork::BLOCK_SEARCH);
     int num_flow = 2 * int(std::max(Real(s.voxel_num_) / Real(t.voxel_num_), Real(t.voxel_num_) / Real(s.voxel_num_))  * std::max(s.voxel_num_, t.voxel_num_) );
-    result_flow_.reserve(num_flow);
+//    std::cout << "num_flow: " << num_flow<<std::endl;
+//    std::cout <<"std::vector max size " << result_flow_.max_size()<<std::endl;
+
+    flow_matrix_ = SpMat(s.voxel_num_, t.voxel_num_);
+    std::vector<Triplet> flow_trip;
+    flow_trip.reserve(num_flow);
+    Real amount;
     for(int i=0; i < s.voxel_num_; ++i)
         for(int j=0; j < t.voxel_num_; ++j)
         {
-            TsFlow f;
-            f.amount = net.flow(di.arcFromId(i*t.voxel_num_ + j));
-            f.from = i;
-            f.to = j;
-            if(fabs(f.amount) > 1e-8)
-                result_flow_.push_back(f);
+            amount = net.flow(di.arcFromId(i*t.voxel_num_ + j));
+            if(fabs(amount) > 1e-8)
+            {
+                flow_trip.push_back(Triplet(i, j, amount));
+            }
         }
-
+    flow_matrix_.setFromTriplets(flow_trip.begin(), flow_trip.end());
+/*  
+    std::ofstream output_flow_row("flow_row.dat");
+    std::ofstream output_flow_col("flow_col.dat");
+    for(int i=0; i < s.voxel_num_; ++i)
+    {
+        output_flow_row << flow_matrix_.row(i).sum()<<std::endl;
+    }
+    for(int j=0; j < t.voxel_num_; ++j)
+    {
+        output_flow_col << flow_matrix_.col(j).sum()<<std::endl;
+    }
+    output_flow_row.close();
+    output_flow_col.close();
+*/
 }		/* -----  end of function min_cost_flow  ----- */

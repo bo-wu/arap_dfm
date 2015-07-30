@@ -29,6 +29,7 @@ struct VolumeObject
 	std::vector<openvdb::Vec3I> triangles;
 	std::vector<Vector3r> mAnchors;
     SpMat mLaplaceMatrix;
+    Real transform_scale_;
     int voxel_num_;
     // constraint voxel index
     VectorXi constraint_index_;
@@ -36,13 +37,13 @@ struct VolumeObject
     MatrixXr distance_vector_field;
     typedef nanoflann::KDTreeEigenMatrixAdaptor<MatrixX3r, 3, nanoflann::metric_L2_Simple> kd_tree_type;
 
-	VolumeObject();
-	VolumeObject(std::string mesh_name);
+	VolumeObject(Real transform_scale=0.01);
+	VolumeObject(std::string mesh_name, Real transform_scale=0.01);
 	~VolumeObject();
 	void initial_volume();
 	//compute vector field on anchor points
 	void calc_vector_field();
-	void read_mesh();
+	void read_mesh(bool resize=true);
 	void write_grid(std::string name);
     void test_volume();
     void set_anchors(std::vector<Vector3r>& anchors);
