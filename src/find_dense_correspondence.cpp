@@ -25,7 +25,7 @@
  */
 Real EMD::compute_EMD()
 {
-     
+     return 0.0;
 }		/* -----  end of function compute_EMD ----- */
 
 
@@ -38,19 +38,19 @@ Real EMD::compute_EMD()
 void EMD::min_cost_flow(VolumeObject &s, VolumeObject &t)
 {
     using namespace lemon;
-    typedef FullBipartiteGraph Digraph;
+    typedef FullBipartiteDigraph Digraph;
     typedef NetworkSimplexSimple<Digraph, Real, Real, unsigned short int> MyNetwork;
-    DIGRAPH_TYPEDEFS(FullBipartiteGraph);
+    DIGRAPH_TYPEDEFS(FullBipartiteDigraph);
 
     Digraph di(s.voxel_num_, t.voxel_num_);
     MyNetwork net(di, false);
     int arc_id = 0;
     Real d;
     VectorXr source_dist_vector;
-    for(int i=0; i < s.voxel_num; ++i)
+    for(int i=0; i < s.voxel_num_; ++i)
     {
         source_dist_vector = s.distance_vector_field.row(i);
-        for(int j=0; j < t.voxel_num; ++j)
+        for(int j=0; j < t.voxel_num_; ++j)
         {
             d = (source_dist_vector - t.distance_vector_field.row(j)).norm();
             net.setCost(di.arcFromId(arc_id), d);
@@ -68,7 +68,7 @@ void EMD::min_cost_flow(VolumeObject &s, VolumeObject &t)
     net.supplyMap(node_supplies_demand);
 
     auto ret = net.run(MyNetwork::BLOCK_SEARCH);
-    int num_flow = 2 * int(max(Real(s.voxel_num_) / Real(t.voxel_num_), Real(t.voxel_num_) / Real(s.voxel_num_))  * max(s.voxel_num_, t.voxel_num_) );
+    int num_flow = 2 * int(std::max(Real(s.voxel_num_) / Real(t.voxel_num_), Real(t.voxel_num_) / Real(s.voxel_num_))  * std::max(s.voxel_num_, t.voxel_num_) );
     result_flow_.reserve(num_flow);
     for(int i=0; i < s.voxel_num_; ++i)
         for(int j=0; j < t.voxel_num_; ++j)

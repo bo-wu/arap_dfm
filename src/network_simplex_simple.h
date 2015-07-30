@@ -35,12 +35,15 @@
 
 // if your compiler has troubles with stdext or hashmaps, just comment the following line to use a slower std::map instead
 #define HASHMAP
+//not stdext in debian
+#define stdext __gnu_cxx
 
 #include <vector>
 #include <limits>
 #include <algorithm>
 #ifdef HASHMAP
-#include <hash_map>
+//#include <hash_map>
+#include <ext/hash_map>
 #else
 #include <map>
 #endif
