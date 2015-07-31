@@ -1,30 +1,24 @@
 /*
  * =====================================================================================
  *
- *       Filename:  thin_plate_spline.cpp
+ *       Filename:  thin_plate_spline.cpp    Created:  07/22/2015 12:25:19 AM
  *
  *    Description:  
  *
- *        Version:  1.0
- *        Created:  07/22/2015 12:25:19 AM
- *       Revision:  none
- *       Compiler:  gcc
- *
- *         Author:  YOUR NAME (), 
- *   Organization:  
+ *         Author:  Wu Bo (Robert), wubo.gfkd@gmail.com
+ *		Copyright:	Copyright (c) 2015, Wu Bo
+ *   Organization:  National University of Defense Technology
  *
  * =====================================================================================
  */
 #include <cmath>
+#include <cassert>
 #include "thin_plate_spline.h"
 
 template<typename Real>
-ThinPlateSpline<Real>::ThinPlateSpline(MatrixX3r& control_points, Real lambda)
-        :
-        m_lambda(lambda),
-        m_control_points(control_points)
+ThinPlateSpline<Real>::ThinPlateSpline(Real lambda)
+        : m_lambda(lambda)
 {
-
 }
 
 template<typename Real>
@@ -39,34 +33,79 @@ inline Real ThinPlateSpline<Real>::kernel(Real r)
 }
 
 template<typename Real>
-void ThinPlateSpline<Real>::compute_tps()
+void ThinPlateSpline<Real>::compute_tps(MatrixX3r &control_points, MatrixX3r &expected_positions)
 {
-    auto v_num = m_control_points.rows();
+    assert( control_points.rows() == expected_positions.rows() );
+    mControlPoints = control_points;
+
+    auto v_num = control_points.rows();
+    mCoeff = MatrixX3r::Zero(v_num, 3);
     MatrixXr L = MatrixXr::Zero(v_num+4, v_num+4);
+    MatrixX3r B = MatrixX3r::Zero(v_num+4, 3);
+    B.block(0,0, v_num, 3) = expected_positions;
+
     Real r, alpha = 0.0;
     for(int i=0; i < v_num; ++i)
         for(int j=i+1; j < v_num; ++j)
         {
-            r = (m_control_points.row(i) - m_control_points.row(j)).norm();
+            r = (control_points.row(i) - control_points.row(j)).norm();
             L(i, j) = L(j, i) = kernel(r);
             alpha += r * 2;
         }
     alpha /= (Real)(v_num * v_num);
-    auto regular = alpha * alpha * m_lambda;
+    auto smooth_term = alpha * alpha * m_lambda;
     for(int i=0; i < v_num; ++i)
     {
-        L(i, i) = regular;
+        L(i, i) = smooth_term;
     }
     L.block(0, v_num, v_num, 1) = VectorXr::Ones(v_num);
     L.block(v_num, 0, 1, v_num) = RowVectorXr::Ones(v_num);
-    L.block(0, v_num+1, v_num, 3) = m_control_points;
-    L.block(v_num+1, 0, 3, v_num) = m_control_points.transpose();
+    L.block(0, v_num+1, v_num, 3) = control_points;
+    L.block(v_num+1, 0, 3, v_num) = control_points.transpose();
+    // solve L*x = B, B=[b1, b2, b3] (least square), SVD slow, robust
+    Eigen::JacobiSVD<MatrixXr> svd(L, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    for(int i=0; i < 3; ++i)
+    {
+        mCoeff.col(i) = svd.solve(B.col(i));
+    }
 
+    //LDLT, faster, but not reliable
+    /*  
+    Eigen::LDLT<MatrixXr> ldlt(L);
+    if(ldlt.info() != Eigen::Success)
+    {
+        std::cerr << "thin plate LDLT solver error\n";
+        exit(-1);
+    }
+    for(int i=0; i < 3; ++i)
+    {
+        mCoeff.col(i) = ldlt.solve(B.col(i));
+    }
+    */
 }
 
 template<typename Real>
-void ThinPlateSpline<Real>::interplate(MatrixX3r& current, MatrixX3r& next_step)
+void ThinPlateSpline<Real>::interplate(MatrixX3r &input, MatrixX3r &output)
 {
-
+    int input_rows = input.rows();
+    int control_num = mControlPoints.rows();
+    output = MatrixX3r::Zero(input_rows, 3);
+    MatrixX3r temp_matrix;
+    VectorXr temp_vector;
+    // use coefficients to multiply instance
+    VectorXr instance(control_num + 4);
+    for(int i=0; i < input_rows; ++i)  
+    {
+        temp_matrix = mControlPoints.rowwise() - input.row(i);
+        temp_vector = temp_matrix.rowwise().norm();
+//#param omp parallel for
+        for(int j=0; j < control_num; ++j)
+        {
+            instance(j) = kernel(temp_vector(j));
+        }
+        instance(control_num) = 1.0;
+        instance.tail<3>() = input.row(i);
+        output.row(i) = mCoeff.transpose() * instance;
+    }
 }
 

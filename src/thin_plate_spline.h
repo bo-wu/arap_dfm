@@ -1,17 +1,13 @@
 /*
  * =====================================================================================
  *
- *       Filename:  thin_plate_spline.h
- *
+ *       Filename:  thin_plate_spline.h  Created:  07/21/2015 08:34:56 PM 
+ *       
  *    Description:  
  *
- *        Version:  1.0
- *        Created:  07/21/2015 08:34:56 PM
- *       Revision:  none
- *       Compiler:  gcc
- *
- *         Author:  YOUR NAME (), 
- *   Organization:  
+ *         Author:  Wu Bo (Robert), wubo.gfkd@gmail.com
+ *		Copyright:	Copyright (c) 2015, Wu Bo
+ *   Organization:  National University of Defense Technology
  *
  * =====================================================================================
  */
@@ -21,15 +17,21 @@ template<typename Real>
 class ThinPlateSpline
 {
 public:
-    ThinPlateSpline(MatrixX3r & control_points, Real lambda=0.0);
+    ThinPlateSpline(Real lambda=0.5);
     ~ThinPlateSpline();
-    void compute_tps();
+    // control_points: input points
+    // expected_positions: expect control points to be
+    void compute_tps(MatrixX3r &control_points, MatrixX3r &expected_positions);
     // @param r: length of radius
     inline Real kernel(Real r2);
-    void interplate(MatrixX3r&, MatrixX3r&);
+    void interplate(MatrixX3r &input, MatrixX3r &output);
 
 private:
     Real m_lambda;
-    MatrixX3r m_control_points;
+    MatrixX3r mControlPoints;
+    // size (v_num + 4) * 3
+    // first v_num for control point and the last 4 for regular term
+    // * 3 for x, y, z
+    MatrixX3r mCoeff;
 };
 
