@@ -20,16 +20,41 @@
 #include "network_simplex_simple.h"
 #include "def_types.h"
 
+
 /* 
  * ===  FUNCTION  ======================================================================
- *         Name:  compute_EMD
- *  Description:  compute earth movers' distance
+ *         Name:  construct_correspondence
+ *  Description:  
  * =====================================================================================
  */
-Real EMD::compute_EMD()
+void EMD::construct_correspondence(VolumeObject &s, VolumeObject &t)
 {
-     return 0.0;
-}		/* -----  end of function compute_EMD ----- */
+    min_cost_flow(s, t);
+    find_correspondence(s, t);
+}		/* -----  end of function construct_correspondence  ----- */
+
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  find_correspondence
+ *  Description:  find the correspondence between source and target
+ * =====================================================================================
+ */
+void EMD::find_correspondence(VolumeObject &s, VolumeObject &t)
+{
+    corresp_source_target_ = MatrixX3r::Zero(s.voxel_num_, 3);
+    corresp_target_source_ = MatrixX3r::Zero(t.voxel_num_, 3);
+    for(int i=0; i < flow_matrix_.outerSize(); ++i)
+    {
+        for(SpMat::InnerIterator it(flow_matrix_, i); it; ++i)
+        {
+            corresp_source_target_.row(it.row()) += it.value() * t.mVoxelPosition.row(it.col());
+            corresp_target_source_.row(it.col()) += it.value() * s.mVoxelPosition.row(it.row());
+        }
+    }
+    corresp_source_target_ *= s.voxel_num_;
+    corresp_target_source_ *= t.voxel_num_;
+}		/* -----  end of function find_correspondence ----- */
 
 
 /* 

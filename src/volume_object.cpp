@@ -161,7 +161,7 @@ void VolumeObject::construct_laplace_matrix()
                     voxelKDTree.query(v_world_pos.data(), 1, &outIndex, &outDistance);
                     if(outDistance > 1.0e-5)
                     {
-                        //std::cerr<<"Distance "<<outDistance<<" should be 0.0\n";
+                        std::cerr<<"Distance "<<outDistance<<" should be 0.0\n";
                     }
                     laplace_triplet_list.push_back(Triplet(k, outIndex, -1));
                 }
