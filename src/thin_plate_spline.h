@@ -21,13 +21,14 @@ public:
     ~ThinPlateSpline() { }
     // control_points: input points
     // expected_positions: expect control points to be
-    void compute_tps(MatrixX3r &control_points, MatrixX3r &expected_positions);
+    void compute_tps(const MatrixX3r &control_points, const MatrixX3r &expected_positions);
     // @param r: length of radius
     inline Real kernel(Real r2);
-    void interplate(MatrixX3r &input, MatrixX3r &output);
+    void interplate(const MatrixX3r &input, MatrixX3r &output);
 
 private:
     Real m_lambda;
+    MatrixXr m_L;
     MatrixX3r mControlPoints;
     // size (v_num + 4) * 3
     // first v_num for control point and the last 4 for regular term

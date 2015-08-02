@@ -38,7 +38,7 @@ inline Real ThinPlateSpline::kernel(Real r)
 
 //template<typename Real>
 //void ThinPlateSpline<Real>::compute_tps(MatrixX3r &control_points, MatrixX3r &expected_positions)
-void ThinPlateSpline::compute_tps(MatrixX3r &control_points, MatrixX3r &expected_positions)
+void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX3r &expected_positions)
 {
     assert( control_points.rows() == expected_positions.rows() );
     mControlPoints = control_points;
@@ -54,7 +54,6 @@ void ThinPlateSpline::compute_tps(MatrixX3r &control_points, MatrixX3r &expected
     Real r, alpha = 0.0;
     for(int i=0; i < v_num; ++i)
     {
-
         for(int j=i+1; j < v_num; ++j)
         {
             r = (control_points.row(i) - control_points.row(j)).norm();
@@ -97,6 +96,7 @@ void ThinPlateSpline::compute_tps(MatrixX3r &control_points, MatrixX3r &expected
         mCoeff.col(i) = ldlt.solve(B.col(i));
     }
 
+    m_L = L;
     /*  
     std::ofstream output_solve_error ("solve_error.dat");
     output_solve_error << L * mCoeff - B;
@@ -106,33 +106,24 @@ void ThinPlateSpline::compute_tps(MatrixX3r &control_points, MatrixX3r &expected
 
 //template<typename Real>
 //void ThinPlateSpline<Real>::interplate(MatrixX3r &input, MatrixX3r &output)
-void ThinPlateSpline::interplate(MatrixX3r &input, MatrixX3r &output)
+void ThinPlateSpline::interplate(const MatrixX3r &input, MatrixX3r &output)
 {
     int input_rows = input.rows();
     int control_num = mControlPoints.rows();
-    output = MatrixX3r::Zero(input_rows, 3);
-    MatrixXr L_matrix(input_rows+4, control_num+4);
-    // use coefficients to multiply instance
-    VectorXr instance(control_num + 4);
+    MatrixXr L_matrix(input_rows, control_num+4);
 
-    for(int i=0; i < )
-    
-/*  
 #pragma omp parallel for 
-    for(int i=0; i < input_rows; ++i)  
+    for(int i=0; i < input_rows; ++i)
     {
-        temp_matrix = mControlPoints.rowwise() - input.row(i);
-        temp_vector = temp_matrix.rowwise().norm();
-    #pragma omp parallel for
         for(int j=0; j < control_num; ++j)
         {
-            instance(j) = kernel(temp_vector(j));
+            L_matrix(i, j) = kernel( (mControlPoints.row(j) - input.row(i)).norm() );
         }
-        instance(control_num) = 1.0;
-        instance.tail<3>() = input.row(i);
-        output.row(i) = mCoeff.transpose() * instance;
     }
-*/
+
+    L_matrix.block(0,control_num, input_rows, 1) = VectorXr::Ones(input_rows);
+    L_matrix.block(0,control_num+1, input_rows, 3) = input;
+    output = L_matrix * mCoeff;
 
 }
 

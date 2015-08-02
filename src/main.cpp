@@ -72,8 +72,8 @@ int main(int argc, char** argv)
     emd_flow.find_correspondence(source_volume, target_volume);
     std::cout << "done!"<<std::endl;
 
-    std::cout<<"computing thin plate spline ... "<<std::flush;
-    ThinPlateSpline source_target_tps; 
+    std::cout<<"computing source_target thin plate spline ... "<<std::flush;
+    ThinPlateSpline source_target_tps(0.0); 
     source_target_tps.compute_tps(source_volume.mVoxelPosition, emd_flow.corresp_source_target_);
     MatrixX3r new_position;
     source_target_tps.interplate(source_volume.mVoxelPosition, new_position);
@@ -85,9 +85,9 @@ int main(int argc, char** argv)
     std::ofstream output_corresp("corresp_target_pos.dat");
     output_corresp << emd_flow.corresp_source_target_;
     output_corresp.close();
-    new_position = new_position - emd_flow.corresp_source_target_;
+    auto position_error = new_position - emd_flow.corresp_source_target_;
     std::ofstream output_error("error.dat");
-    output_error<< new_position;
+    output_error<< position_error;
     output_error.close();
     /*  
     */
