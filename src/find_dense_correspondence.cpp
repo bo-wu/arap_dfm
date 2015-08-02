@@ -44,9 +44,10 @@ void EMD::find_correspondence(VolumeObject &s, VolumeObject &t)
 {
     corresp_source_target_ = MatrixX3r::Zero(s.voxel_num_, 3);
     corresp_target_source_ = MatrixX3r::Zero(t.voxel_num_, 3);
+
     for(int i=0; i < flow_matrix_.outerSize(); ++i)
     {
-        for(SpMat::InnerIterator it(flow_matrix_, i); it; ++i)
+        for(SpMat::InnerIterator it(flow_matrix_, i); it; ++it)
         {
             corresp_source_target_.row(it.row()) += it.value() * t.mVoxelPosition.row(it.col());
             corresp_target_source_.row(it.col()) += it.value() * s.mVoxelPosition.row(it.row());
@@ -69,9 +70,7 @@ void EMD::min_cost_flow(VolumeObject &s, VolumeObject &t)
     typedef FullBipartiteDigraph Digraph;
     typedef NetworkSimplexSimple<Digraph, Real, Real, unsigned short int> MyNetwork;
     DIGRAPH_TYPEDEFS(FullBipartiteDigraph);
-    std::cout<<"s.voxel_num " << s.voxel_num_<< std::endl;
-    std::cout<<"t.voxel_num " << t.voxel_num_<< std::endl;
-//    std::cout<<"s.voxel_num * t.voxel_num = "<<s.voxel_num_ * t.voxel_num_<<std::endl;
+
     Digraph di(s.voxel_num_, t.voxel_num_);
     MyNetwork net(di, false);
     int arc_id = 0;
@@ -99,11 +98,9 @@ void EMD::min_cost_flow(VolumeObject &s, VolumeObject &t)
 
     auto ret = net.run(MyNetwork::BLOCK_SEARCH);
     int num_flow = 2 * int(std::max(Real(s.voxel_num_) / Real(t.voxel_num_), Real(t.voxel_num_) / Real(s.voxel_num_))  * std::max(s.voxel_num_, t.voxel_num_) );
-//    std::cout << "num_flow: " << num_flow<<std::endl;
-//    std::cout <<"std::vector max size " << result_flow_.max_size()<<std::endl;
 
     flow_matrix_ = SpMat(s.voxel_num_, t.voxel_num_);
-    std::vector<Triplet> flow_trip;
+    std::vector<MyTriplet> flow_trip;
     flow_trip.reserve(num_flow);
     Real amount;
     for(int i=0; i < s.voxel_num_; ++i)
@@ -112,7 +109,7 @@ void EMD::min_cost_flow(VolumeObject &s, VolumeObject &t)
             amount = net.flow(di.arcFromId(i*t.voxel_num_ + j));
             if(fabs(amount) > 1e-8)
             {
-                flow_trip.push_back(Triplet(i, j, amount));
+                flow_trip.push_back(MyTriplet(i, j, amount));
             }
         }
     flow_matrix_.setFromTriplets(flow_trip.begin(), flow_trip.end());

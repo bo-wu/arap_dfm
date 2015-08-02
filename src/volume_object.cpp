@@ -22,6 +22,7 @@
 #include <openvdb/tools/LevelSetUtil.h>
 #include "volume_object.h"
 
+//#define MIN_QUAD_WITH_FIXED_CPP_DEBUG
 #include <igl/min_quad_with_fixed.h>
 
 VolumeObject::VolumeObject(Real transform_scale)
@@ -140,7 +141,7 @@ void VolumeObject::construct_laplace_matrix()
     int degree;
     openvdb::Coord v_coord;
     Vector3r v_world_pos;
-    std::vector<Triplet> laplace_triplet_list;
+    std::vector<MyTriplet> laplace_triplet_list;
     laplace_triplet_list.reserve(7*voxelNum);
     // laplace matrix
     k = 0;
@@ -163,10 +164,10 @@ void VolumeObject::construct_laplace_matrix()
                     {
                         std::cerr<<"Distance "<<outDistance<<" should be 0.0\n";
                     }
-                    laplace_triplet_list.push_back(Triplet(k, outIndex, -1));
+                    laplace_triplet_list.push_back(MyTriplet(k, outIndex, -1));
                 }
             }
-        laplace_triplet_list.push_back(Triplet(k, k, degree));
+        laplace_triplet_list.push_back(MyTriplet(k, k, degree));
     }
     mLaplaceMatrix.setFromTriplets(laplace_triplet_list.begin(), laplace_triplet_list.end());
     // constrain part
@@ -191,14 +192,21 @@ void VolumeObject::calc_vector_field()
 {
 //    test_volume();
     construct_laplace_matrix();
+//    std::ofstream output_laplace("laplace.dat");
+//    output_laplace << mLaplaceMatrix;
+//    output_laplace.close();
     igl::min_quad_with_fixed_data<Real> mqwf;
     int num_row = constraint_index_.rows();
     VectorXr B = VectorXr::Zero(voxel_num_, 1);
     //Empyty constraints (except for constraint_index_/value)
-    VectorXr Beq;
     SpMat Aeq;
+    VectorXr Beq;
     igl::min_quad_with_fixed_precompute(mLaplaceMatrix, constraint_index_, Aeq, true, mqwf);
-    VectorXr D = VectorXr::Zero(voxel_num_, 1);
+    VectorXr D;
+//    std::ofstream output_constraint_index("constraint_index.dat");
+//    output_constraint_index << constraint_index_;
+//    output_constraint_index.close();
+//    
     // solve equation with constraint
     for(int i=0; i < num_row; ++i)
     {

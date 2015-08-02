@@ -33,7 +33,7 @@ typedef Eigen::Matrix<Real, 3, 1> Vector3r;
 typedef Eigen::Matrix<Real, 1, Eigen::Dynamic> RowVectorXr;
 typedef Eigen::SparseMatrix<Real> SpMat;
 typedef Eigen::SparseVector<Real> SpVec;
-typedef Eigen::Triplet<Real> Triplet;
+typedef Eigen::Triplet<Real> MyTriplet;
 
 
 struct MyTraits : public OpenMesh::DefaultTraits

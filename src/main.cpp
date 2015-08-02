@@ -17,6 +17,7 @@
 #include "def_types.h"
 #include "volume_object.h"
 #include "find_dense_correspondence.h"
+#include "thin_plate_spline.h"
 
 int main(int argc, char** argv)
 {
@@ -27,11 +28,13 @@ int main(int argc, char** argv)
     }
     // read positions from skeleton correspondence
      
-    std::cout << "initializing source volume ... \n";
+    Real voxel_size = 0.02;
+    std::cout << "initializing source volume ... ";
     // transform 0.02
-    VolumeObject source_volume(argv[1], 0.02);
-    Vector3r source_anchor1(-0.16, -0.4, -0.42);
-    Vector3r source_anchor2(0.16, 0.08, 0.1);
+    VolumeObject source_volume(argv[1], voxel_size);
+    Vector3r source_anchor1(-0.1, -0.35, -0.42);
+    Vector3r source_anchor2(0.10, 0.08, 0.0);
+  //  Vector3r source_anchor3(-0.05, -0.05, 0.0);
 
     //transfrom 0.01
 //    VolumeObject source_volume(argv[1]);
@@ -40,12 +43,13 @@ int main(int argc, char** argv)
 
     source_volume.mAnchors.push_back(source_anchor1);
     source_volume.mAnchors.push_back(source_anchor2);
+//    source_volume.mAnchors.push_back(source_anchor3);
 	source_volume.calc_vector_field();
 	source_volume.write_grid(argv[1]);
 
-    std::cout << "initializing target volume ... \n";
+    std::cout << "initializing target volume ... ";
     //transfrom 0.02
-    VolumeObject target_volume(argv[2], 0.02);
+    VolumeObject target_volume(argv[2], voxel_size);
     Vector3r target_anchor1(-0.12, -0.48, -0.06);
     Vector3r target_anchor2(0.0, 0.48, 0.12);
     
@@ -58,11 +62,35 @@ int main(int argc, char** argv)
     target_volume.mAnchors.push_back(target_anchor2);
     target_volume.calc_vector_field();
     target_volume.write_grid(argv[2]);
+    std::cout<< "done!\n";
+    std::cout<<"source voxel num " << source_volume.mVoxelPosition.rows()<<std::endl;
+    std::cout << "target voxel num " << target_volume.mVoxelPosition.rows()<<std::endl;
 
-    std::cout << "find dense correspondence between source and target ... \n";
+    std::cout << "find dense correspondence between source and target ... "<<std::flush;
     EMD emd_flow;
     emd_flow.min_cost_flow(source_volume, target_volume);
-    std::cout << "all done !\n";
+    emd_flow.find_correspondence(source_volume, target_volume);
+    std::cout << "done!"<<std::endl;
+
+    std::cout<<"computing thin plate spline ... "<<std::flush;
+    ThinPlateSpline source_target_tps; 
+    source_target_tps.compute_tps(source_volume.mVoxelPosition, emd_flow.corresp_source_target_);
+    MatrixX3r new_position;
+    source_target_tps.interplate(source_volume.mVoxelPosition, new_position);
+    std::cout<<"done!"<<std::endl;
+
+    std::ofstream output_newpos ("new_pos.dat");
+    output_newpos << new_position;
+    output_newpos.close();
+    std::ofstream output_corresp("corresp_target_pos.dat");
+    output_corresp << emd_flow.corresp_source_target_;
+    output_corresp.close();
+    new_position = new_position - emd_flow.corresp_source_target_;
+    std::ofstream output_error("error.dat");
+    output_error<< new_position;
+    output_error.close();
+    /*  
+    */
 
     /*
     std::ofstream output_dist_vector("distance_field.dat");

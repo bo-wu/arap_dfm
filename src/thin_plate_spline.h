@@ -13,12 +13,12 @@
  */
 #include "def_types.h"
 
-template<typename Real>
+//template<typename Real>
 class ThinPlateSpline
 {
 public:
     ThinPlateSpline(Real lambda=0.5);
-    ~ThinPlateSpline();
+    ~ThinPlateSpline() { }
     // control_points: input points
     // expected_positions: expect control points to be
     void compute_tps(MatrixX3r &control_points, MatrixX3r &expected_positions);
