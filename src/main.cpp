@@ -79,6 +79,7 @@ int main(int argc, char** argv)
     source_target_tps.interplate(source_volume.mVoxelPosition, new_position);
     std::cout<<"done!"<<std::endl;
 
+    /*  
     std::ofstream output_newpos ("new_pos.dat");
     output_newpos << new_position;
     output_newpos.close();
@@ -89,7 +90,6 @@ int main(int argc, char** argv)
     std::ofstream output_error("error.dat");
     output_error<< position_error;
     output_error.close();
-    /*  
     */
 
     /*
