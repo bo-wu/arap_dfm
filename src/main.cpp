@@ -99,11 +99,12 @@ int main(int argc, char** argv)
     std::ofstream output_laplace ("laplace.dat");
     output_laplace << source_volume.mLaplaceMatrix;
     output_laplace.close();
-    */
-    /*
     std::ofstream output_voxel_pos("source_voxel_pos.dat");
     output_voxel_pos << source_volume.mVoxelPosition;
     output_voxel_pos.close();
+    */
+
+    /*
     std::ofstream output_target_voxel("target_voxel_pos.dat");
     output_target_voxel << target_volume.mVoxelPosition;
     output_target_voxel.close();

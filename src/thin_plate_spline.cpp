@@ -15,6 +15,8 @@
 #include <cassert>
 #include <iostream>
 #include <fstream>
+#include <ctime>
+#include <armadillo>
 #include "thin_plate_spline.h"
 
 //template<typename Real>
@@ -28,18 +30,19 @@ ThinPlateSpline::ThinPlateSpline(Real lambda)
 //inline Real ThinPlateSpline<Real>::kernel(Real r)
 inline Real ThinPlateSpline::kernel(Real r)
 {
-    if(r > (Real)1e-05)
+    if(r == (Real)0.0)
     {
-        return r * r * log(r);
+        return (Real)0.0;
     }
     else
-        return (Real)0.0;
+        return r * r * log(r);
 }
 
 //template<typename Real>
 //void ThinPlateSpline<Real>::compute_tps(MatrixX3r &control_points, MatrixX3r &expected_positions)
 void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX3r &expected_positions)
 {
+    assert( control_points.rows() > 3 );
     assert( control_points.rows() == expected_positions.rows() );
     mControlPoints = control_points;
 
@@ -49,8 +52,9 @@ void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX
     MatrixX3r B = MatrixX3r::Zero(v_num+4, 3);
     B.block(0,0, v_num, 3) = expected_positions;
 
-//#pragma omp parallel 
-{
+#pragma omp parallel 
+    {
+
     Real r, alpha = 0.0;
     for(int i=0; i < v_num; ++i)
     {
@@ -67,24 +71,32 @@ void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX
     {
         L(i, i) = smooth_term;
     }
-}
+
+    }
     L.block(0, v_num, v_num, 1) = VectorXr::Ones(v_num);
     L.block(v_num, 0, 1, v_num) = RowVectorXr::Ones(v_num);
     L.block(0, v_num+1, v_num, 3) = control_points;
     L.block(v_num+1, 0, 3, v_num) = control_points.transpose();
 
-    /*
-    //should NOT use svd (it is NOT least square !!!)
-    // solve L*x = B, B=[b1, b2, b3] , SVD slow, robust
-    Eigen::JacobiSVD<MatrixXr> svd(L, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    for(int i=0; i < 3; ++i)
+    arma::mat arma_L = arma::mat(v_num+4, v_num+4);
+    arma::mat arma_B = arma::mat(v_num+4, 3);
+    for(int i=0; i < v_num+4; ++i)
     {
-        mCoeff.col(i) = svd.solve(B.col(i));
+        for(int j=0; j < v_num+4; ++j)
+        {
+            arma_L(i, j) = L(i, j);
+        }
+        for(int k=0; k < 3; ++k)
+        {
+            arma_B(i, k) = B(i, k);
+        }
     }
-    */
 
+    /*  
     //LDLT, faster 
-    Eigen::LDLT<MatrixXr> ldlt;
+    //Eigen::LDLT<MatrixXr> ldlt; //wrong
+    //Eigen::FullPivLU<MatrixXr> ldlt;
+    Eigen::ColPivHouseholderQR<MatrixXr> ldlt;
     ldlt.compute(L);
     if(ldlt.info() != Eigen::Success)
     {
@@ -95,12 +107,32 @@ void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX
     {
         mCoeff.col(i) = ldlt.solve(B.col(i));
     }
+    */
+
+    // fastest solver
+    std::clock_t start;
+    start = std::clock();
+    arma::mat X = arma::solve(arma_L, arma_B);
+    Real elapse = (std::clock() - start) / (Real)(CLOCKS_PER_SEC);
+    std::cout <<"solving equation elapse " << elapse <<std::endl;
 
     m_L = L;
+    for(int i=0; i < v_num+4; ++i)
+        for(int j=0; j < 3; ++j)
+        {
+            mCoeff(i, j) = X(i, j);
+        }
+
     /*  
-    std::ofstream output_solve_error ("solve_error.dat");
-    output_solve_error << L * mCoeff - B;
+    std::ofstream output_coeff("coefficient.dat");
+    output_coeff << mCoeff;
+    output_coeff.close();
+    std::ofstream output_solve_error ("matrix_L.dat");
+    output_solve_error << L;
     output_solve_error.close();
+    std::ofstream output_B("B.dat");
+    output_B << B;
+    output_B.close();
     */
 }
 
@@ -125,5 +157,28 @@ void ThinPlateSpline::interplate(const MatrixX3r &input, MatrixX3r &output)
     L_matrix.block(0,control_num+1, input_rows, 3) = input;
     output = L_matrix * mCoeff;
 
+    /*
+    std::ofstream output_coeff("coefficient.dat");
+    output_coeff << mCoeff;
+    output_coeff.close();
+    std::ofstream output_result("l_matrix_result.dat");
+    output_result << output;
+    output_result.close();
+    std::ofstream output_ml_result("mL_matrix_result.dat");
+    output_ml_result << m_L.block(0,0, mControlPoints.rows(), mControlPoints.rows()+4) * mCoeff;
+    output_ml_result.close();
+    */
+
+    /*  
+    std::ofstream output_L_matrix("input_Lmatrix.dat");
+    output_L_matrix << L_matrix;
+    output_L_matrix.close();
+    std::ofstream output_mL("m_L.dat");
+    output_mL << m_L.block(0,0, mControlPoints.rows(), mControlPoints.rows()+4);
+    output_mL.close();
+    std::ofstream output_diffL("diff_L.dat");
+    output_diffL << L_matrix - m_L.block(0,0, mControlPoints.rows(), mControlPoints.rows()+4);
+    output_diffL.close();
+    */
 }
 

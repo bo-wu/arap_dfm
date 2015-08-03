@@ -6,7 +6,7 @@ file(GLOB sources "${CMAKE_SOURCE_DIR}/src/*.cpp")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(vdb openvdb tbb Half)
 set(openmesh OpenMeshCore)
-set(igl igl)
+set(igl igl armadillo)
 set(lemon emon)
 
 set(CMAKE_BUILD_TYPE Release)
