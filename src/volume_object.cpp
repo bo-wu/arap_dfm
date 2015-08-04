@@ -272,6 +272,14 @@ void VolumeObject::polar_decompose(const Matrix3r &rest, const Matrix3r &deform,
 
     R = svd.matrixU() * svd.matrixV().transpose();
     S = svd.matrixV() * eigen_values * svd.matrixV().transpose();
+
+    if(R.determinant() < 0)
+    {
+        auto I = Matrix3r::Identity();
+        I(2,2) = -1.0;
+        R = R * I;
+        S = I * S;
+    }
 }		/* -----  end of function polar_decompose  ----- */
 
 /* 
