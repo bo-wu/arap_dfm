@@ -285,17 +285,12 @@ void VolumeObject::calc_tetrahedron_transform(const MatrixX3r &final_corresp_poi
 {
     assert( mDenseVoxelPosition.rows() == final_corresp_points.rows() );
     Matrix3r R, S, rest, deform;
-    Vector3r rest_v0, deform_v0;
-    Vector4i tet_vertex_index;
     for(int i=0; i < mTetIndex.size(); ++i)
     {
-        tet_vertex_index = mTetIndex[i];
-        rest_v0 = mDenseVoxelPosition.row( tet_vertex_index(0) );
-        deform_v0 = final_corresp_points.row(tet_vertex_index(0) );
         for(int j=1; j < 4; ++j)
         {
-            rest.row(j-1) = mDenseVoxelPosition.row(j) - rest_v0;
-            deform.row(j-1) = final_corresp_points.row(j) - deform_v0;
+            rest.col(j-1) = mDenseVoxelPosition.row( mTetIndex[i](j) ) - mDenseVoxelPosition.row(mTetIndex[i](0));
+            deform.col(j-1) = final_corresp_points.row( mTetIndex[i](j) ) - final_corresp_points.row(mTetIndex[i](j));
         }
         polar_decompose(rest, deform, R, S);
 
