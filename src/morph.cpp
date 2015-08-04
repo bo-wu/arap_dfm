@@ -11,10 +11,8 @@
  *
  * =====================================================================================
  */
-#include <openvdb/openvdb.h>
 #include "morph.h"
 
 Morph::Morph()
 {
-	openvdb::initialize();
 }

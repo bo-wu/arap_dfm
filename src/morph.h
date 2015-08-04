@@ -14,6 +14,7 @@
 
 #ifndef MORPH_H_
 #define MORPH_H_
+#include "def_types.h"
 #include "volume_object.h"
 
 struct Morph
@@ -21,7 +22,8 @@ struct Morph
 	Morph();
 	~Morph();
 	VolumeObject source, target;
-	std::vector<std::pair<int, int> > anchor_pairs;
+    
+    //MatrixX3r intermedia_from_source, intermedia_from_target;
 	void start_morph();
 };
 

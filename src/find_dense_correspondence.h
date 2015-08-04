@@ -16,20 +16,21 @@
 #include <vector>
 #include "def_types.h"
 #include "volume_object.h"
+
 class EMD
 {
 public:
     EMD() {}
-    void construct_correspondence(VolumeObject &s, VolumeObject &t);
-    void find_correspondence(VolumeObject &s, VolumeObject &t);
-    void min_cost_flow(VolumeObject &s, VolumeObject &t);
-    SpMat flow_matrix_;
-    //std::vector<std::pair<Vector3r, Vector3r> > corresp_source_target_;
-    //std::vector<std::pair<Vector3r, Vector3r> > corresp_target_source_;
+
+    void construct_correspondence(const VolumeObject &s, const VolumeObject &t);
     //correspondence from source voxel point to target (some point)
     MatrixX3r corresp_source_target_;
     //correspondence from target voxel point to source (some point)
     MatrixX3r corresp_target_source_;
+private:
+    SpMat flow_matrix_;
+    void find_correspondence(const VolumeObject &s, const VolumeObject &t);
+    void min_cost_flow(const VolumeObject &s, const VolumeObject &t);
 };
 #endif
 

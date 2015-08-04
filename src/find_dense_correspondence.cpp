@@ -27,7 +27,7 @@
  *  Description:  
  * =====================================================================================
  */
-void EMD::construct_correspondence(VolumeObject &s, VolumeObject &t)
+void EMD::construct_correspondence(const VolumeObject &s, const VolumeObject &t)
 {
     min_cost_flow(s, t);
     find_correspondence(s, t);
@@ -40,7 +40,7 @@ void EMD::construct_correspondence(VolumeObject &s, VolumeObject &t)
  *  Description:  find the correspondence between source and target
  * =====================================================================================
  */
-void EMD::find_correspondence(VolumeObject &s, VolumeObject &t)
+void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t)
 {
     corresp_source_target_ = MatrixX3r::Zero(s.voxel_num_, 3);
     corresp_target_source_ = MatrixX3r::Zero(t.voxel_num_, 3);
@@ -64,7 +64,7 @@ void EMD::find_correspondence(VolumeObject &s, VolumeObject &t)
  *  Description:  
  * =====================================================================================
  */
-void EMD::min_cost_flow(VolumeObject &s, VolumeObject &t)
+void EMD::min_cost_flow(const VolumeObject &s, const VolumeObject &t)
 {
     using namespace lemon;
     typedef FullBipartiteDigraph Digraph;

@@ -15,7 +15,9 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <cassert>
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
 #include <OpenMesh/Core/IO/MeshIO.hh>
 #include <openvdb/Grid.h>
 #include <openvdb/tools/MeshToVolume.h>
@@ -105,7 +107,7 @@ void VolumeObject::test_volume()
 		*/
 }
 
-void VolumeObject::set_anchors(std::vector<Vector3r>& anchors)
+void VolumeObject::set_anchors(const std::vector<Vector3r>& anchors)
 {
     mAnchors = anchors;
 }
@@ -114,7 +116,7 @@ void VolumeObject::set_anchors(std::vector<Vector3r>& anchors)
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  construct_laplace_matrix
- *  Description:  
+ *  Description:  laplace matrix for distance vector field (sparse grid) 
  * =====================================================================================
  */
 void VolumeObject::construct_laplace_matrix()
@@ -132,6 +134,8 @@ void VolumeObject::construct_laplace_matrix()
         auto voxel_pos = grid->indexToWorld(iter.getCoord());
         mVoxelPosition.row(k) << voxel_pos[0], voxel_pos[1], voxel_pos[2];
     }
+    // temporal for testing, need to change 
+    mDenseVoxelPosition = mVoxelPosition;
 
     //find neighbor voxel index
     kd_tree_type voxelKDTree(3, mVoxelPosition);
@@ -141,15 +145,22 @@ void VolumeObject::construct_laplace_matrix()
     int degree;
     openvdb::Coord v_coord;
     Vector3r v_world_pos;
+    // construct tetrahedron
+    std::vector< std::vector<int> > neighbor_index_3d; //3 directions
+    std::vector<int> neighbor_index_1d; // 1 direction
+
     std::vector<MyTriplet> laplace_triplet_list;
     laplace_triplet_list.reserve(7*voxelNum);
-    // laplace matrix
     k = 0;
+    // laplace matrix
     for(auto iter=interior_grid->cbeginValueOn(); iter; ++iter, ++k)
     {
+        neighbor_index_3d.clear();
         v_coord = iter.getCoord();
         degree = 0;
         for(int i=0; i < 3; ++i)
+        {
+            neighbor_index_1d.clear();
             for(int j=-1; j <= 1; j+=2)
             {
                 auto temp_coord = v_coord;
@@ -165,12 +176,34 @@ void VolumeObject::construct_laplace_matrix()
                         std::cerr<<"Distance "<<outDistance<<" should be 0.0\n";
                     }
                     laplace_triplet_list.push_back(MyTriplet(k, outIndex, -1));
+                    neighbor_index_1d.push_back(outIndex);
                 }
             }
+            if (neighbor_index_1d.size() > 0)
+            {
+                neighbor_index_3d.push_back(neighbor_index_1d);
+            }
+        }
         laplace_triplet_list.push_back(MyTriplet(k, k, degree));
+
+        // construct tetrahedron
+        if(neighbor_index_3d.size() == 3)
+        {
+            Vector4i tet_index;
+            tet_index(0) = k;
+            for(int l=0; l < neighbor_index_3d[0].size(); ++l)
+                for(int m=0; m < neighbor_index_3d[1].size(); ++m)
+                    for(int n=0; n < neighbor_index_3d[2].size(); ++n)
+                    {
+                        tet_index(1) = neighbor_index_3d[0].at(l);
+                        tet_index(2) = neighbor_index_3d[1].at(m);
+                        tet_index(3) = neighbor_index_3d[2].at(n);
+                        mTetIndex.push_back(tet_index);
+                    }
+        }
     }
     mLaplaceMatrix.setFromTriplets(laplace_triplet_list.begin(), laplace_triplet_list.end());
-    // constrain part
+    // constraint part
     if (anchorNum > 0)
         constraint_index_ = VectorXi::Zero(anchorNum, 1);
     k = 0;
@@ -192,9 +225,11 @@ void VolumeObject::calc_vector_field()
 {
 //    test_volume();
     construct_laplace_matrix();
-//    std::ofstream output_laplace("laplace.dat");
-//    output_laplace << mLaplaceMatrix;
-//    output_laplace.close();
+    /*
+    std::ofstream output_laplace("laplace.dat");
+    output_laplace << mLaplaceMatrix;
+    output_laplace.close();
+    */
     igl::min_quad_with_fixed_data<Real> mqwf;
     int num_row = constraint_index_.rows();
     VectorXr B = VectorXr::Zero(voxel_num_, 1);
@@ -203,10 +238,11 @@ void VolumeObject::calc_vector_field()
     VectorXr Beq;
     igl::min_quad_with_fixed_precompute(mLaplaceMatrix, constraint_index_, Aeq, true, mqwf);
     VectorXr D;
-//    std::ofstream output_constraint_index("constraint_index.dat");
-//    output_constraint_index << constraint_index_;
-//    output_constraint_index.close();
-//    
+    /*  
+    std::ofstream output_constraint_index("constraint_index.dat");
+    output_constraint_index << constraint_index_;
+    output_constraint_index.close();
+    */
     // solve equation with constraint
     for(int i=0; i < num_row; ++i)
     {
@@ -216,6 +252,88 @@ void VolumeObject::calc_vector_field()
         distance_vector_field.col(i) = D;
     }
 }		/* -----  end of function calc_vector_field  ----- */
+
+
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  polar_decompose
+ *  Description:  
+ * =====================================================================================
+ */
+void VolumeObject::polar_decompose(const Matrix3r &rest, const Matrix3r &deform, Matrix3r &R, Matrix3r &S)
+{
+    Matrix3r defrom_gradient = deform * rest.inverse();
+    Eigen::JacobiSVD<Matrix3r> svd(defrom_gradient, Eigen::ComputeFullU|Eigen::ComputeFullV);
+    Matrix3r eigen_values = Matrix3r::Zero();
+    Vector3r singular = svd.singularValues();
+    for(int i=0; i < 3; ++i)
+        eigen_values(i,i) = singular(i);
+
+    R = svd.matrixU() * svd.matrixV().transpose();
+    S = svd.matrixV() * eigen_values * svd.matrixV().transpose();
+}		/* -----  end of function polar_decompose  ----- */
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  calc_tetrahedron_transform
+ *  Description:  fill  mTetTransform
+ *  @param final_corresp_points: correspondence after warping  
+ * =====================================================================================
+ */
+void VolumeObject::calc_tetrahedron_transform(const MatrixX3r &final_corresp_points)
+{
+    assert( mDenseVoxelPosition.rows() == final_corresp_points.rows() );
+    Matrix3r R, S, rest, deform;
+    Vector3r rest_v0, deform_v0;
+    Vector4i tet_vertex_index;
+    for(int i=0; i < mTetIndex.size(); ++i)
+    {
+        tet_vertex_index = mTetIndex[i];
+        rest_v0 = mDenseVoxelPosition.row( tet_vertex_index(0) );
+        deform_v0 = final_corresp_points.row(tet_vertex_index(0) );
+        for(int j=1; j < 4; ++j)
+        {
+            rest.row(j-1) = mDenseVoxelPosition.row(j) - rest_v0;
+            deform.row(j-1) = final_corresp_points.row(j) - deform_v0;
+        }
+        polar_decompose(rest, deform, R, S);
+
+        mTetTransform.push_back(std::make_pair(R, S));
+    }
+}		/* -----  end of function calc_tetrahedron_transform  ----- */
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  find_intermedium_points
+ *  Description:  find intermedium points at time t [0,1]
+ *  @param inter_corresp_points: correspondence by interpolating warping
+ * =====================================================================================
+ */
+void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, const Real t)
+{
+    int anchor_num = 1;
+    // with one anchor point
+    SpMat L(inter_corresp_points.rows()+anchor_num, inter_corresp_points.rows());
+    MatrixX3r B(inter_corresp_points.rows()+anchor_num, 3);
+
+    std::vector<MyTriplet> tet_triplet_list;
+    int tet_num = mTetIndex.size();
+    tet_triplet_list.reserve(4*tet_num);
+    for(int i=0; i < tet_num; ++i)
+    {
+        //construct B
+        Quaternionr quat(mTetTransform[i].first);
+        //construct L, B
+        tet_triplet_list.push_back(MyTriplet(mTetIndex[i](0), mTetIndex[i](0), 3));
+        for(int j=1; j < 4; ++j)
+        {
+            tet_triplet_list.push_back(MyTriplet(mTetIndex[i](0), mTetIndex[i](j), -1));
+
+        }
+    }
+
+}		/* -----  end of function find_intermedium_points  ----- */
 
 
 ///////////////////////////////////////////

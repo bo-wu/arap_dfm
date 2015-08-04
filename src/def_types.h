@@ -16,6 +16,7 @@
 #define DEF_TYPES_H_
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <Eigen/Geometry>
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 
 //use igl static lib
@@ -29,12 +30,14 @@ typedef Eigen::Matrix<Real, 3, Eigen::Dynamic> Matrix3Xr;
 typedef Eigen::Matrix<Real, Eigen::Dynamic, 4> MatrixX4r;
 typedef Eigen::Matrix<Real, Eigen::Dynamic, 1> VectorXr;
 typedef Eigen::Matrix<int, Eigen::Dynamic, 1> VectorXi;
+typedef Eigen::Matrix<Real, 3, 3> Matrix3r;
+typedef Eigen::Matrix<int, 4, 1> Vector4i;
 typedef Eigen::Matrix<Real, 3, 1> Vector3r;
 typedef Eigen::Matrix<Real, 1, Eigen::Dynamic> RowVectorXr;
 typedef Eigen::SparseMatrix<Real> SpMat;
 typedef Eigen::SparseVector<Real> SpVec;
 typedef Eigen::Triplet<Real> MyTriplet;
-
+typedef Eigen::Quaternion<Real> Quaternionr;
 
 struct MyTraits : public OpenMesh::DefaultTraits
 {

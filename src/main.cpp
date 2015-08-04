@@ -68,8 +68,9 @@ int main(int argc, char** argv)
 
     std::cout << "find dense correspondence between source and target ... "<<std::flush;
     EMD emd_flow;
-    emd_flow.min_cost_flow(source_volume, target_volume);
-    emd_flow.find_correspondence(source_volume, target_volume);
+    emd_flow.construct_correspondence(source_volume, target_volume);
+    //emd_flow.min_cost_flow(source_volume, target_volume);
+    //emd_flow.find_correspondence(source_volume, target_volume);
     std::cout << "done!"<<std::endl;
 
     std::cout<<"computing source_target thin plate spline ... "<<std::flush;

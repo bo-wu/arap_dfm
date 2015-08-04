@@ -28,7 +28,6 @@ public:
 
 private:
     Real m_lambda;
-    MatrixXr m_L;
     MatrixX3r mControlPoints;
     // size (v_num + 4) * 3
     // first v_num for control point and the last 4 for regular term

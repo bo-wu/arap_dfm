@@ -75,6 +75,7 @@ void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX
     }
 
     }
+
     L.block(0, v_num, v_num, 1) = VectorXr::Ones(v_num);
     L.block(v_num, 0, 1, v_num) = RowVectorXr::Ones(v_num);
     L.block(0, v_num+1, v_num, 3) = control_points;
@@ -118,8 +119,6 @@ void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX
     arma::mat X = arma::solve(arma_L, arma_B);
     Real elapse = (std::clock() - start) / (Real)(CLOCKS_PER_SEC);
     std::cout <<"solving equation elapse " << elapse <<std::endl;
-
-    m_L = L;
 
 #pragma omp parallel for
     for(int i=0; i < v_num+4; ++i)
