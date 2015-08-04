@@ -27,6 +27,7 @@ struct VolumeObject
     openvdb::BoolGrid::Ptr interior_grid, interior_dense_grid;
 	std::vector<openvdb::Vec3s> points;
 	std::vector<openvdb::Vec3I> triangles;
+    // anchors for distance field
 	std::vector<Vector3r> mAnchors;
     //tetrahedron index
     std::vector<Vector4i> mTetIndex;
@@ -40,7 +41,8 @@ struct VolumeObject
     MatrixX3r mVoxelPosition;
     //Dense Grid Position used for interpolate distance field
     MatrixX3r mDenseVoxelPosition;
-
+    Vector3r mass_center; // object center
+    int mass_center_voxel_index;
     MatrixXr distance_vector_field;
     typedef nanoflann::KDTreeEigenMatrixAdaptor<MatrixX3r, 3, nanoflann::metric_L2_Simple> kd_tree_type;
 

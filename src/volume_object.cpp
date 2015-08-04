@@ -275,7 +275,7 @@ void VolumeObject::polar_decompose(const Matrix3r &rest, const Matrix3r &deform,
 
     if(R.determinant() < 0)
     {
-        auto I = Matrix3r::Identity();
+        Matrix3r I = Matrix3r::Identity();
         I(2,2) = -1.0;
         R = R * I;
         S = I * S;
@@ -317,25 +317,63 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
 {
     int anchor_num = 1;
     // with one anchor point
-    SpMat L(inter_corresp_points.rows()+anchor_num, inter_corresp_points.rows());
-    MatrixX3r B(inter_corresp_points.rows()+anchor_num, 3);
+    SpMat L(mDenseVoxelPosition.rows()+anchor_num, mDenseVoxelPosition.rows());
+    MatrixX3r B(mDenseVoxelPosition.rows()+anchor_num, 3);
 
     std::vector<MyTriplet> tet_triplet_list;
     int tet_num = mTetIndex.size();
     tet_triplet_list.reserve(4*tet_num);
+    // construct L and B
+     
+#ifdef PARALLEL_OMP_
+#pragma omp parallel for 
+#endif
     for(int i=0; i < tet_num; ++i)
     {
+        Quaternionr quat_I, quat_res;
+        quat_I.setIdentity();
+        Matrix3r M;
+        Matrix3r mat_I = Matrix3r::Identity();
+        Matrix43r tet_vert;
+
         //construct B
-        Quaternionr quat(mTetTransform[i].first);
+        Quaternionr quat(mTetTransform[i].first); // test if quad equal first
+        quat_res = quat_I.slerp(t, quat);
+        M = quat_res.toRotationMatrix() * ( (1-t)*mat_I + t*mTetTransform[i].second );
+        for(int j=0; j < 4; ++j)
+        {
+            tet_vert.row(j) = M * mDenseVoxelPosition.row(mTetIndex[i](j)).transpose();
+        }
+        B.row(i) = 3*tet_vert.row(0) - tet_vert.row(1) - tet_vert.row(2) - tet_vert.row(3);
         //construct L, B
         tet_triplet_list.push_back(MyTriplet(mTetIndex[i](0), mTetIndex[i](0), 3));
         for(int j=1; j < 4; ++j)
         {
             tet_triplet_list.push_back(MyTriplet(mTetIndex[i](0), mTetIndex[i](j), -1));
-
         }
     }
+    // TODO  
+    // choose anchor points
+    //tet_triplet_list.push_back()
+    
+    Eigen::ConjugateGradient<SpMat> cg;
+    cg.compute(L.transpose()*L);
+    B = L.transpose() * B;
 
+#ifdef PARALLEL_OMP_
+#pragma omp parallel for
+#endif
+    for(int i=0; i < 3; ++i)
+    {
+        inter_corresp_points.col(i) = cg.solve(B.col(i));
+        std::cout << "col(i) #iterations: " << cg.iterations()<<std::endl;
+        std::cout << "estimated error "<<cg.error() <<std::endl;
+        if(cg.info() != Eigen::Success)
+        {
+            std::cout << "ConjugateGradient solver not converage\n";
+            exit(-1);
+        }
+    }
 }		/* -----  end of function find_intermedium_points  ----- */
 
 

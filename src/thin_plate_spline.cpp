@@ -52,11 +52,15 @@ void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX
     MatrixX3r B = MatrixX3r::Zero(v_num+4, 3);
     B.block(0,0, v_num, 3) = expected_positions;
 
+#ifdef PARALLEL_OMP_
 #pragma omp parallel 
+#endif
     {
 
     Real r, alpha = 0.0;
+#ifdef PARALLEL_OMP_
 #pragma omp for
+#endif
     for(int i=0; i < v_num; ++i)
     {
         for(int j=i+1; j < v_num; ++j)
@@ -68,7 +72,9 @@ void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX
     }
     alpha /= (Real)(v_num * v_num);
     auto smooth_term = alpha * alpha * m_lambda;
+#ifdef PARALLEL_OMP_
 #pragma omp for
+#endif
     for(int i=0; i < v_num; ++i)
     {
         L(i, i) = smooth_term;
@@ -83,7 +89,9 @@ void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX
 
     arma::mat arma_L = arma::mat(v_num+4, v_num+4);
     arma::mat arma_B = arma::mat(v_num+4, 3);
+#ifdef PARALLEL_OMP_
 #pragma omp parallel for
+#endif
     for(int i=0; i < v_num+4; ++i)
     {
         for(int j=0; j < v_num+4; ++j)
@@ -120,7 +128,9 @@ void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX
     Real elapse = (std::clock() - start) / (Real)(CLOCKS_PER_SEC);
     std::cout <<"solving equation elapse " << elapse <<std::endl;
 
+#ifdef PARALLEL_OMP_
 #pragma omp parallel for
+#endif
     for(int i=0; i < v_num+4; ++i)
         for(int j=0; j < 3; ++j)
         {
@@ -147,8 +157,9 @@ void ThinPlateSpline::interplate(const MatrixX3r &input, MatrixX3r &output)
     int input_rows = input.rows();
     int control_num = mControlPoints.rows();
     MatrixXr L_matrix(input_rows, control_num+4);
-
+#ifdef PARALLEL_OMP_
 #pragma omp parallel for 
+#endif
     for(int i=0; i < input_rows; ++i)
     {
         for(int j=0; j < control_num; ++j)
