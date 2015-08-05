@@ -16,6 +16,7 @@
 #include <fstream>
 #include <algorithm>
 #include <cassert>
+#include <ctime>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <OpenMesh/Core/IO/MeshIO.hh>
@@ -263,7 +264,6 @@ void VolumeObject::calc_vector_field()
 }		/* -----  end of function calc_vector_field  ----- */
 
 
-
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  polar_decompose
@@ -338,7 +338,7 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
 #ifdef PARALLEL_OMP_
 //#pragma omp parallel for 
 #endif
-    for(int i=0; i < tet_num; ++i)
+    for(int i=0; i < tet_num; i++)
     {
         Quaternionr quat_I, quat_res;
         quat_I.setIdentity();
@@ -359,11 +359,12 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
 
         //construct L
         tet_triplet_list.push_back(MyTriplet(mTetIndex[i](0), mTetIndex[i](0), 3));
-        for(int j=1; j < 4; ++j)
+        for(int k=1; k < 4; ++k)
         {
-            tet_triplet_list.push_back(MyTriplet(mTetIndex[i](0), mTetIndex[i](j), -1));
+            tet_triplet_list.push_back(MyTriplet(mTetIndex[i](0), mTetIndex[i](k), -1));
         }
     }
+
     // choose anchor points
     Real weight = 10.0;
     tet_triplet_list.push_back(MyTriplet(dense_voxel_num, mass_center_voxel_index, weight));
@@ -378,9 +379,8 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
     cg.compute(L_normal);
     B = L.transpose() * B;
 
-#ifdef PARALLEL_OMP_
-//#pragma omp parallel for
-#endif
+    std::clock_t start;
+    start = std::clock();
     for(int i=0; i < 3; ++i)
     {
         inter_corresp_points.col(i) = cg.solve(B.col(i));
@@ -389,10 +389,14 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
         if(cg.info() != Eigen::Success)
         {
             std::cout << "ConjugateGradient solver not converage\n";
-            exit(-1);
+    //        exit(-1);
         }
     }
-
+    Real elapse = (std::clock() - start) / (Real)(CLOCKS_PER_SEC);
+    std::cout <<"solving use time " << elapse <<std::endl;
+    std::ofstream output_res("inter_points.dat");
+    output_res << inter_corresp_points;
+    output_res.close();
 }		/* -----  end of function find_intermedium_points  ----- */
 
 
