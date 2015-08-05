@@ -136,6 +136,13 @@ void VolumeObject::construct_laplace_matrix()
     }
     // temporal for testing, need to change 
     mDenseVoxelPosition = mVoxelPosition;
+#ifdef PARALLEL_OMP_
+#pragma omp parallel for
+#endif
+    for(int i=0; i < 3; ++i)
+    {
+        mass_center(i) = mVoxelPosition.col(i).mean();
+    }
 
     //find neighbor voxel index
     kd_tree_type voxelKDTree(3, mVoxelPosition);
@@ -145,6 +152,8 @@ void VolumeObject::construct_laplace_matrix()
     int degree;
     openvdb::Coord v_coord;
     Vector3r v_world_pos;
+    voxelKDTree.query(mass_center.data(), 1, &outIndex, &outDistance);
+    mass_center_voxel_index = outIndex;
     // construct tetrahedron
     std::vector< std::vector<int> > neighbor_index_3d; //3 directions
     std::vector<int> neighbor_index_1d; // 1 direction
@@ -316,17 +325,18 @@ void VolumeObject::calc_tetrahedron_transform(const MatrixX3r &final_corresp_poi
 void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, const Real t)
 {
     int anchor_num = 1;
+    int dense_voxel_num = mDenseVoxelPosition.rows();
     // with one anchor point
-    SpMat L(mDenseVoxelPosition.rows()+anchor_num, mDenseVoxelPosition.rows());
-    MatrixX3r B(mDenseVoxelPosition.rows()+anchor_num, 3);
+    SpMat L(dense_voxel_num+anchor_num, dense_voxel_num);
+    MatrixX3r B = MatrixX3r::Zero(dense_voxel_num+anchor_num, 3);
+    inter_corresp_points = MatrixX3r::Zero(dense_voxel_num, 3);
 
     std::vector<MyTriplet> tet_triplet_list;
     int tet_num = mTetIndex.size();
-    tet_triplet_list.reserve(4*tet_num);
+    tet_triplet_list.reserve(4*tet_num+anchor_num);
     // construct L and B
-     
 #ifdef PARALLEL_OMP_
-#pragma omp parallel for 
+//#pragma omp parallel for 
 #endif
     for(int i=0; i < tet_num; ++i)
     {
@@ -340,33 +350,41 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
         Quaternionr quat(mTetTransform[i].first); // test if quad equal first
         quat_res = quat_I.slerp(t, quat);
         M = quat_res.toRotationMatrix() * ( (1-t)*mat_I + t*mTetTransform[i].second );
+
         for(int j=0; j < 4; ++j)
         {
             tet_vert.row(j) = M * mDenseVoxelPosition.row(mTetIndex[i](j)).transpose();
         }
-        B.row(i) = 3*tet_vert.row(0) - tet_vert.row(1) - tet_vert.row(2) - tet_vert.row(3);
-        //construct L, B
+        B.row( mTetIndex[i](0) ) += 3*tet_vert.row(0) - tet_vert.row(1) - tet_vert.row(2) - tet_vert.row(3);
+
+        //construct L
         tet_triplet_list.push_back(MyTriplet(mTetIndex[i](0), mTetIndex[i](0), 3));
         for(int j=1; j < 4; ++j)
         {
             tet_triplet_list.push_back(MyTriplet(mTetIndex[i](0), mTetIndex[i](j), -1));
         }
     }
-    // TODO  
     // choose anchor points
-    //tet_triplet_list.push_back()
-    
+    Real weight = 10.0;
+    tet_triplet_list.push_back(MyTriplet(dense_voxel_num, mass_center_voxel_index, weight));
+    std::cout <<"mass center voxel index " << mass_center_voxel_index<<std::endl;
+    std::cout<<"tet_triplet_list.size "<<tet_triplet_list.size()<<" reserve size " << 4*tet_num+anchor_num<<std::endl;
+    // mass_center is not real the anchor point's position(a little difference)
+    B.row(dense_voxel_num) = weight * mass_center;
+
+    L.setFromTriplets(tet_triplet_list.begin(), tet_triplet_list.end());
     Eigen::ConjugateGradient<SpMat> cg;
-    cg.compute(L.transpose()*L);
+    SpMat L_normal = L.transpose() * L;
+    cg.compute(L_normal);
     B = L.transpose() * B;
 
 #ifdef PARALLEL_OMP_
-#pragma omp parallel for
+//#pragma omp parallel for
 #endif
     for(int i=0; i < 3; ++i)
     {
         inter_corresp_points.col(i) = cg.solve(B.col(i));
-        std::cout << "col(i) #iterations: " << cg.iterations()<<std::endl;
+        std::cout << "col("<<i<<") #iterations: " << cg.iterations()<<std::endl;
         std::cout << "estimated error "<<cg.error() <<std::endl;
         if(cg.info() != Eigen::Success)
         {
@@ -374,6 +392,7 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
             exit(-1);
         }
     }
+
 }		/* -----  end of function find_intermedium_points  ----- */
 
 

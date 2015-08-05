@@ -74,11 +74,14 @@ int main(int argc, char** argv)
     std::cout << "done!"<<std::endl;
 
     std::cout<<"computing source_target thin plate spline ... "<<std::flush;
-    ThinPlateSpline source_target_tps(0.0); 
+    ThinPlateSpline source_target_tps; 
     source_target_tps.compute_tps(source_volume.mVoxelPosition, emd_flow.corresp_source_target_);
-    MatrixX3r new_position;
-    source_target_tps.interplate(source_volume.mVoxelPosition, new_position);
+    MatrixX3r final_corresp_points;
+    source_target_tps.interplate(source_volume.mVoxelPosition, final_corresp_points);
     std::cout<<"done!"<<std::endl;
+    source_volume.calc_tetrahedron_transform(final_corresp_points);
+    MatrixX3r inter_corresp_points;
+    source_volume.find_intermedium_points(inter_corresp_points, 0.5);
 
     /*  
     std::ofstream output_newpos ("new_pos.dat");
