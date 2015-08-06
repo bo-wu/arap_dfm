@@ -137,9 +137,7 @@ void VolumeObject::construct_laplace_matrix()
     }
     // temporal for testing, need to change 
     mDenseVoxelPosition = mVoxelPosition;
-#ifdef PARALLEL_OMP_
-#pragma omp parallel for
-#endif
+
     for(int i=0; i < 3; ++i)
     {
         mass_center(i) = mVoxelPosition.col(i).mean();
@@ -155,6 +153,8 @@ void VolumeObject::construct_laplace_matrix()
     Vector3r v_world_pos;
     voxelKDTree.query(mass_center.data(), 1, &outIndex, &outDistance);
     mass_center_voxel_index = outIndex;
+    // keep fixed
+    mass_center = mVoxelPosition.row(outIndex);
     // construct tetrahedron
     std::vector< std::vector<int> > neighbor_index_3d; //3 directions
     std::vector<int> neighbor_index_1d; // 1 direction
@@ -307,7 +307,7 @@ void VolumeObject::calc_tetrahedron_transform(const MatrixX3r &final_corresp_poi
         for(int j=1; j < 4; ++j)
         {
             rest.col(j-1) = mDenseVoxelPosition.row( mTetIndex[i](j) ) - mDenseVoxelPosition.row(mTetIndex[i](0));
-            deform.col(j-1) = final_corresp_points.row( mTetIndex[i](j) ) - final_corresp_points.row(mTetIndex[i](j));
+            deform.col(j-1) = final_corresp_points.row( mTetIndex[i](j) ) - final_corresp_points.row(mTetIndex[i](0));
         }
         polar_decompose(rest, deform, R, S);
 
@@ -326,22 +326,22 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
 {
     int anchor_num = 1;
     int dense_voxel_num = mDenseVoxelPosition.rows();
+    int tet_num = mTetIndex.size();
+
     // with one anchor point
-    SpMat L(dense_voxel_num+anchor_num, dense_voxel_num);
-    MatrixX3r B = MatrixX3r::Zero(dense_voxel_num+anchor_num, 3);
+    SpMat L(3*tet_num+anchor_num, dense_voxel_num);
+    MatrixX3r B = MatrixX3r::Zero(3*tet_num+anchor_num, 3);
     inter_corresp_points = MatrixX3r::Zero(dense_voxel_num, 3);
 
     std::vector<MyTriplet> tet_triplet_list;
-    int tet_num = mTetIndex.size();
-    tet_triplet_list.reserve(4*tet_num+anchor_num);
+    tet_triplet_list.reserve(6*tet_num+anchor_num);
+
     // construct L and B
-#ifdef PARALLEL_OMP_
-//#pragma omp parallel for 
-#endif
     for(int i=0; i < tet_num; i++)
     {
         Quaternionr quat_I, quat_res;
         quat_I.setIdentity();
+
         Matrix3r M;
         Matrix3r mat_I = Matrix3r::Identity();
         Matrix43r tet_vert;
@@ -355,25 +355,55 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
         {
             tet_vert.row(j) = M * mDenseVoxelPosition.row(mTetIndex[i](j)).transpose();
         }
-        B.row( mTetIndex[i](0) ) += 3*tet_vert.row(0) - tet_vert.row(1) - tet_vert.row(2) - tet_vert.row(3);
-
-        //construct L
-        tet_triplet_list.push_back(MyTriplet(mTetIndex[i](0), mTetIndex[i](0), 3));
-        for(int k=1; k < 4; ++k)
+        //construct L, B
+        for(int k=0; k < 3; ++k)
         {
-            tet_triplet_list.push_back(MyTriplet(mTetIndex[i](0), mTetIndex[i](k), -1));
+            tet_triplet_list.push_back(MyTriplet(3*i+k, mTetIndex[i](0), 1));
+            tet_triplet_list.push_back(MyTriplet(3*i+k, mTetIndex[i](k+1), -1));
+            B.row(3*i+k) = tet_vert.row(0) - tet_vert.row(k+1);
         }
     }
 
     // choose anchor points
     Real weight = 10.0;
-    tet_triplet_list.push_back(MyTriplet(dense_voxel_num, mass_center_voxel_index, weight));
-    std::cout <<"mass center voxel index " << mass_center_voxel_index<<std::endl;
-    std::cout<<"tet_triplet_list.size "<<tet_triplet_list.size()<<" reserve size " << 4*tet_num+anchor_num<<std::endl;
-    // mass_center is not real the anchor point's position(a little difference)
-    B.row(dense_voxel_num) = weight * mass_center;
 
+    // mass_center is not real the anchor point's position(a little difference)
+    tet_triplet_list.push_back(MyTriplet(3*tet_num, mass_center_voxel_index, weight));
+    B.row(3*tet_num) = weight * mass_center;
     L.setFromTriplets(tet_triplet_list.begin(), tet_triplet_list.end());
+
+    std::cout <<"mass center voxel index " << mass_center_voxel_index<<std::endl;
+    std::cout<<"tet_triplet_list.size "<<tet_triplet_list.size()<<" reserve size " << 6*tet_num+anchor_num<<std::endl;
+
+    /*
+    std::ofstream output_L("L_matrix.dat");
+    output_L << L;
+    output_L.close();
+    std::ofstream output_B("B_position.dat");
+    output_B << B;
+    output_B.close();
+
+    std::ofstream output_L_col("L_col_sum.dat");
+    std::ofstream output_L_row("L_row_sum.dat");
+
+    VectorXr row_values = VectorXr::Zero(L.rows());
+    VectorXr col_values = VectorXr::Zero(L.cols());
+
+    for(int k=0; k < L.outerSize(); ++k)
+    {
+        for(SpMat::InnerIterator it(L, k); it; ++it)
+        {
+            row_values(it.row()) += it.value();
+            col_values(it.col()) += it.value();
+        }
+
+    }
+    output_L_col << col_values;
+    output_L_row << row_values;
+    output_L_col.close();
+    output_L_row.close();
+      */
+
     Eigen::ConjugateGradient<SpMat> cg;
     SpMat L_normal = L.transpose() * L;
     cg.compute(L_normal);
@@ -384,19 +414,22 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
     for(int i=0; i < 3; ++i)
     {
         inter_corresp_points.col(i) = cg.solve(B.col(i));
+        //inter_corresp_points.col(i) = cg.solveWithGuess(B.col(i), mDenseVoxelPosition.col(i));
         std::cout << "col("<<i<<") #iterations: " << cg.iterations()<<std::endl;
         std::cout << "estimated error "<<cg.error() <<std::endl;
         if(cg.info() != Eigen::Success)
         {
             std::cout << "ConjugateGradient solver not converage\n";
-    //        exit(-1);
+            exit(-1);
         }
     }
     Real elapse = (std::clock() - start) / (Real)(CLOCKS_PER_SEC);
     std::cout <<"solving use time " << elapse <<std::endl;
+    /*  
     std::ofstream output_res("inter_points.dat");
     output_res << inter_corresp_points;
     output_res.close();
+    */
 }		/* -----  end of function find_intermedium_points  ----- */
 
 

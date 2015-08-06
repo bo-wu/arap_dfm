@@ -81,15 +81,20 @@ int main(int argc, char** argv)
     std::cout<<"done!"<<std::endl;
     source_volume.calc_tetrahedron_transform(final_corresp_points);
     MatrixX3r inter_corresp_points;
-    source_volume.find_intermedium_points(inter_corresp_points, 0.5);
+    source_volume.find_intermedium_points(inter_corresp_points, 1.0);
+
 
     /*  
-    std::ofstream output_newpos ("new_pos.dat");
-    output_newpos << new_position;
-    output_newpos.close();
-    std::ofstream output_corresp("corresp_target_pos.dat");
-    output_corresp << emd_flow.corresp_source_target_;
-    output_corresp.close();
+    std::ofstream output_inter_corresp("inter_corresp.dat");
+    output_inter_corresp << inter_corresp_points;
+    output_inter_corresp.close();
+
+    std::ofstream output_init_corresp("corresp_target_pos.dat");
+    output_init_corresp << emd_flow.corresp_source_target_;
+    output_init_corresp.close();
+    std::ofstream output_tps_corresp("tps_corresp.dat");
+    output_tps_corresp << final_corresp_points;
+    output_tps_corresp.close();
     auto position_error = new_position - emd_flow.corresp_source_target_;
     std::ofstream output_error("error.dat");
     output_error<< position_error;
