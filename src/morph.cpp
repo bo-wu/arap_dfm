@@ -17,6 +17,7 @@
 #include <sstream>
 #include <iomanip>
 #include <openvdb/tools/Interpolation.h>
+#include <openvdb/tools/Prune.h>
 #include <openvdb/tools/SignedFloodFill.h>
 #include "morph.h"
 
@@ -115,7 +116,8 @@ void Morph::start_morph (Real step_size)
     std::cout<<"start morphing \n";
     int steps = 1 / step_size;
     std::string grid_name;
-    for(int i=0; i < steps; ++i)
+    //for(int i=0; i < steps; ++i)
+    for(int i=0; i < 1; ++i)
     {
         std::stringstream ss;
         ss << std::setw(4) << std::setfill('0') << i;
@@ -146,7 +148,16 @@ void Morph::interpolate_grids (openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &g
     MatrixX3r source_intermedium;
     source_volume_.find_intermedium_points(source_intermedium, t);
     source_tps.compute_tps(source_intermedium, source_volume_.mDenseVoxelPosition);
+
+    std::ofstream output_source_inter("source_intermedium.dat");
+    output_source_inter << source_intermedium;
+    output_source_inter.close();
+
     source_tps.interpolate(grid_vertex, corresp_source_grid_points);
+
+    std::ofstream output_source_inter_corresp("source_intermedium_corresp.dat");
+    output_source_inter_corresp << corresp_source_grid_points;
+    output_source_inter_corresp.close();
 
     //backwards(target) mapping
     MatrixX3r target_intermedium;
@@ -174,13 +185,14 @@ void Morph::interpolate_grids (openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &g
                 xyz.reset(i, j, k);
                 index = 4*(i+dim)*dim*dim + 2*(j+dim)*dim + k+dim;
 
-                source_vert = source_intermedium.row(index);
-                target_vert = target_intermedium.row(index);
+                source_vert = corresp_source_grid_points.row(index);
+                target_vert = corresp_target_grid_points.row(index);
                 value = (1-t) * source_sampler.wsSample(openvdb::Vec3d(source_vert(0), source_vert(1), source_vert(2)))
                     + t * target_sampler.wsSample(openvdb::Vec3R(target_vert(0), target_vert(1), target_vert(2)));
                 accessor.setValue(xyz, value);
             }
 
+    openvdb::tools::pruneInactive(morph_grid->tree());
     openvdb::tools::signedFloodFill(morph_grid->tree());
 }		/* -----  end of function interpolate_grids  ----- */
 
@@ -212,3 +224,30 @@ void Morph::write_sequence(std::string grid_name)
     file.close();
 }		/* -----  end of function write_sequence  ----- */
 
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  test_copy_value
+ *  Description:  
+ * =====================================================================================
+ */
+void Morph::test_copy_value ()
+{
+    openvdb::FloatGrid::Ptr morph_grid = openvdb::FloatGrid::create(2.0);
+    openvdb::math::Transform::Ptr grid_transform = openvdb::math::Transform::createLinearTransform(voxel_size_);
+    morph_grid->setTransform(grid_transform);
+    morph_grid->setGridClass(openvdb::GRID_LEVEL_SET);
+
+    openvdb::Coord xyz;
+    int dim = 0.5 * 1 / voxel_size_;
+    MatrixX3r grid_vertex(8*dim*dim*dim, 3);
+    for(int i=-dim; i < dim; ++i)
+        for(int j=-dim; j < dim; ++j)
+            for(int k=-dim; k < dim; ++k)
+            {
+                xyz.reset(i, j, k);
+                auto voxel_pos = morph_grid->indexToWorld(xyz);
+                grid_vertex.row(4*(i+dim)*dim*dim + 2*(j+dim)*dim + k+dim) << voxel_pos[0], voxel_pos[1], voxel_pos[2];
+            }
+    
+}		/* -----  end of function test_copy_value  ----- */

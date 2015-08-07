@@ -37,6 +37,7 @@ struct Morph
 	void start_morph(Real step_size=0.01);
     void interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &grid_vertex, Real t);
     void write_sequence(std::string grid_name="");
+    void test_copy_value();
 
 };
 
