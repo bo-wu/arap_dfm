@@ -126,7 +126,7 @@ void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX
     start = std::clock();
     arma::mat X = arma::solve(arma_L, arma_B);
     Real elapse = (std::clock() - start) / (Real)(CLOCKS_PER_SEC);
-    std::cout <<"solving tps elapse " << elapse <<"  ";
+    std::cout <<"tps computation elapse " << elapse <<"s\n";
 
 #ifdef PARALLEL_OMP_
 #pragma omp parallel for

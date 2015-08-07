@@ -372,8 +372,10 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
     B.row(3*tet_num) = weight * mass_center;
     L.setFromTriplets(tet_triplet_list.begin(), tet_triplet_list.end());
 
+    /*  
     std::cout <<"mass center voxel index " << mass_center_voxel_index<<std::endl;
     std::cout<<"tet_triplet_list.size "<<tet_triplet_list.size()<<" reserve size " << 6*tet_num+anchor_num<<std::endl;
+    */
 
     /*
     std::ofstream output_L("L_matrix.dat");
@@ -414,9 +416,8 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
     for(int i=0; i < 3; ++i)
     {
         inter_corresp_points.col(i) = cg.solve(B.col(i));
-        //inter_corresp_points.col(i) = cg.solveWithGuess(B.col(i), mDenseVoxelPosition.col(i));
-        std::cout << "col("<<i<<") #iterations: " << cg.iterations()<<std::endl;
-        std::cout << "estimated error "<<cg.error() <<std::endl;
+//        std::cout << "col("<<i<<") #iterations: " << cg.iterations()<<std::endl;
+//        std::cout << "estimated error "<<cg.error() <<std::endl;
         if(cg.info() != Eigen::Success)
         {
             std::cout << "ConjugateGradient solver not converage\n";
@@ -424,7 +425,7 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
         }
     }
     Real elapse = (std::clock() - start) / (Real)(CLOCKS_PER_SEC);
-    std::cout <<"solving use time " << elapse <<std::endl;
+    std::cout<<"intermedium correspondence points elapse "<<elapse<<"s\n";
     /*  
     std::ofstream output_res("inter_points.dat");
     output_res << inter_corresp_points;
