@@ -14,17 +14,30 @@
 
 #ifndef MORPH_H_
 #define MORPH_H_
+#include <vector>
+#include <openvdb/openvdb.h>
 #include "def_types.h"
 #include "volume_object.h"
+#include "thin_plate_spline.h"
+#include "find_dense_correspondence.h"
 
 struct Morph
 {
-	Morph();
+    Morph(std::string source_mesh_name, std::string target_mesh_name, CorrespType corresp_pairs,  Real voxel_size=0.2);
 	~Morph();
-	VolumeObject source, target;
-    
+    Real voxel_size_;
+    //openvdb::FloatGrid::Ptr result_grid;
+    std::vector<openvdb::FloatGrid::Ptr> grid_vec_;
+    std::string source_mesh_name_, target_mesh_name_;
+	VolumeObject source_volume_, target_volume_;
+    CorrespType corresp_pairs_;
+
     //MatrixX3r intermedia_from_source, intermedia_from_target;
-	void start_morph();
+    void initial();
+	void start_morph(Real step_size=0.01);
+    void interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &grid_vertex, Real t);
+    void write_sequence(std::string grid_name="");
+
 };
 
 #endif

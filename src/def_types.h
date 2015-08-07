@@ -14,6 +14,7 @@
 
 #ifndef DEF_TYPES_H_
 #define DEF_TYPES_H_
+#include <vector>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <Eigen/Geometry>
@@ -47,5 +48,7 @@ struct MyTraits : public OpenMesh::DefaultTraits
 };
 
 typedef OpenMesh::TriMesh_ArrayKernelT<MyTraits> TriMesh;
+
+typedef std::vector<std::pair<Vector3r, Vector3r> > CorrespType;
 
 #endif

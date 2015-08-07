@@ -20,7 +20,6 @@
 #include "network_simplex_simple.h"
 #include "def_types.h"
 
-
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  construct_correspondence

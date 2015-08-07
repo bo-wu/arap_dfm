@@ -126,7 +126,7 @@ void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX
     start = std::clock();
     arma::mat X = arma::solve(arma_L, arma_B);
     Real elapse = (std::clock() - start) / (Real)(CLOCKS_PER_SEC);
-    std::cout <<"solving equation elapse " << elapse <<"  ";
+    std::cout <<"solving tps elapse " << elapse <<"  ";
 
 #ifdef PARALLEL_OMP_
 #pragma omp parallel for
@@ -151,8 +151,8 @@ void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX
 }
 
 //template<typename Real>
-//void ThinPlateSpline<Real>::interplate(MatrixX3r &input, MatrixX3r &output)
-void ThinPlateSpline::interplate(const MatrixX3r &input, MatrixX3r &output)
+//void ThinPlateSpline<Real>::interpolate(MatrixX3r &input, MatrixX3r &output)
+void ThinPlateSpline::interpolate(const MatrixX3r &input, MatrixX3r &output)
 {
     int input_rows = input.rows();
     int control_num = mControlPoints.rows();

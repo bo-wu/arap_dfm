@@ -28,22 +28,22 @@
 //#define MIN_QUAD_WITH_FIXED_CPP_DEBUG
 #include <igl/min_quad_with_fixed.h>
 
-VolumeObject::VolumeObject(Real transform_scale)
+VolumeObject::VolumeObject(Real transform_scale) : transform_scale_(transform_scale)
 {
-    transform_scale_ = transform_scale;
-	if (mesh_name.empty())
-	{
-		std::cerr<<"mesh_name without initialization \n";
-		exit(-1);
-	}
-	initial_volume();
 }
 
 VolumeObject::VolumeObject(std::string name, Real transform_scale)
 {
-    transform_scale_ = transform_scale;
 	mesh_name = name;
+    transform_scale_ = transform_scale;
 	initial_volume();
+}
+
+void VolumeObject::initial(std::string name, Real transform_scale)
+{
+    mesh_name = name;
+    transform_scale_ = transform_scale;
+    initial_volume();
 }
 
 VolumeObject::~VolumeObject()
@@ -56,7 +56,7 @@ VolumeObject::~VolumeObject()
 void VolumeObject::initial_volume()
 {
 	read_mesh();
-	grid = openvdb::FloatGrid::create(10.0);
+	grid = openvdb::FloatGrid::create(2.0);
 	openvdb::math::Transform::Ptr grid_transform = openvdb::math::Transform::createLinearTransform(transform_scale_);
 	grid->setTransform(grid_transform);
 	grid->setGridClass(openvdb::GRID_LEVEL_SET);

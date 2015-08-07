@@ -18,8 +18,10 @@
 #include "kdtree.h"
 #include "def_types.h"
 
-struct VolumeObject
+class VolumeObject
 {
+
+public:
 	TriMesh mesh;
 	std::string mesh_name;
 	openvdb::FloatGrid::Ptr grid, dense_grid;
@@ -46,9 +48,10 @@ struct VolumeObject
     MatrixXr distance_vector_field;
     typedef nanoflann::KDTreeEigenMatrixAdaptor<MatrixX3r, 3, nanoflann::metric_L2_Simple> kd_tree_type;
 
-	VolumeObject(Real transform_scale=0.01);
-	VolumeObject(std::string mesh_name, Real transform_scale=0.01);
+    VolumeObject(Real transform_scale=0.02);
+	VolumeObject(std::string mesh_name, Real transform_scale=0.02);
 	~VolumeObject();
+    void initial(std::string name, Real transform_scale);
 	void initial_volume();
 	//compute vector field on anchor points
     void construct_laplace_matrix();

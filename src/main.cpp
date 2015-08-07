@@ -18,6 +18,7 @@
 #include "volume_object.h"
 #include "find_dense_correspondence.h"
 #include "thin_plate_spline.h"
+#include "morph.h"
 
 int main(int argc, char** argv)
 {
@@ -27,14 +28,22 @@ int main(int argc, char** argv)
         return 0;
     }
     // read positions from skeleton correspondence
-     
+    std::vector<std::pair<Vector3r, Vector3r> > corresp_pairs;
+    corresp_pairs.push_back(std::make_pair(Vector3r(-0.1, -0.35, -0.42), Vector3r(-0.12, -0.48, -0.06)));
+    corresp_pairs.push_back(std::make_pair(Vector3r(0.1, 0.08, 0.0), Vector3r(0.0, 0.48, 0.12)));
+
+    Morph morph(argv[1], argv[2], corresp_pairs, 0.02);
+    morph.initial();
+    morph.start_morph(0.1);
+    morph.write_sequence();
+    
+/*
     Real voxel_size = 0.02;
     std::cout << "initializing source volume ... ";
     // transform 0.02
     VolumeObject source_volume(argv[1], voxel_size);
     Vector3r source_anchor1(-0.1, -0.35, -0.42);
     Vector3r source_anchor2(0.10, 0.08, 0.0);
-  //  Vector3r source_anchor3(-0.05, -0.05, 0.0);
 
     //transfrom 0.01
 //    VolumeObject source_volume(argv[1]);
@@ -43,7 +52,6 @@ int main(int argc, char** argv)
 
     source_volume.mAnchors.push_back(source_anchor1);
     source_volume.mAnchors.push_back(source_anchor2);
-//    source_volume.mAnchors.push_back(source_anchor3);
 	source_volume.calc_vector_field();
 	source_volume.write_grid(argv[1]);
 
@@ -77,11 +85,12 @@ int main(int argc, char** argv)
     ThinPlateSpline source_target_tps; 
     source_target_tps.compute_tps(source_volume.mVoxelPosition, emd_flow.corresp_source_target_);
     MatrixX3r final_corresp_points;
-    source_target_tps.interplate(source_volume.mVoxelPosition, final_corresp_points);
+    source_target_tps.interpolate(source_volume.mVoxelPosition, final_corresp_points);
     std::cout<<"done!"<<std::endl;
     source_volume.calc_tetrahedron_transform(final_corresp_points);
     MatrixX3r inter_corresp_points;
     source_volume.find_intermedium_points(inter_corresp_points, 1.0);
+*/
 
 
     /*  

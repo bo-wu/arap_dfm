@@ -11,6 +11,9 @@
  *
  * =====================================================================================
  */
+#ifndef THIN_PLATE_SPLINE_H_
+#define THIN_PLATE_SPLINE_H_
+
 #include "def_types.h"
 
 //template<typename Real>
@@ -24,7 +27,7 @@ public:
     void compute_tps(const MatrixX3r &control_points, const MatrixX3r &expected_positions);
     // @param r: length of radius
     inline Real kernel(Real r2);
-    void interplate(const MatrixX3r &input, MatrixX3r &output);
+    void interpolate(const MatrixX3r &input, MatrixX3r &output);
 
 private:
     Real m_lambda;
@@ -35,3 +38,4 @@ private:
     MatrixX3r mCoeff;
 };
 
+#endif

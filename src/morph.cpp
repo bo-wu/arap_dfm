@@ -11,8 +11,204 @@
  *
  * =====================================================================================
  */
+#include <ctime>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <iomanip>
+#include <openvdb/tools/Interpolation.h>
+#include <openvdb/tools/SignedFloodFill.h>
 #include "morph.h"
 
-Morph::Morph()
+Morph::Morph(std::string source_mesh_name, std::string target_mesh_name, CorrespType corresp_pairs, Real voxel_size) : 
+    source_mesh_name_(source_mesh_name),
+    target_mesh_name_(target_mesh_name),
+    corresp_pairs_(corresp_pairs),
+    voxel_size_(voxel_size)
 {
+
+    source_volume_ = VolumeObject(source_mesh_name, voxel_size);
+    target_volume_ = VolumeObject(target_mesh_name, voxel_size);
+
+    for(int i=0; i < corresp_pairs_.size(); ++i)
+    {
+        source_volume_.mAnchors.push_back(corresp_pairs_[i].first);
+        target_volume_.mAnchors.push_back(corresp_pairs_[i].second);
+    }
 }
+
+Morph::~Morph()
+{
+
+}
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  initial
+ *  Description:  
+ * =====================================================================================
+ */
+void Morph::initial()
+{
+    std::cout <<"initialize morphing process, it will take minutes ... "<<std::flush;
+
+    std::clock_t start;
+    Real elapse;
+    //correspondence after TPS, 
+    //S_T: source-to-target, T_S: target-to-source
+    MatrixX3r corresp_S_T_, corresp_T_S_;
+
+    start = std::clock();
+
+    //could be parallel
+    source_volume_.calc_vector_field();  
+    target_volume_.calc_vector_field();
+    
+    EMD emd_flow;
+    emd_flow.construct_correspondence(source_volume_, target_volume_);
+
+    ThinPlateSpline source_target_tps, target_source_tps;
+
+    {
+    source_target_tps.compute_tps(source_volume_.mVoxelPosition, emd_flow.corresp_source_target_);
+    source_target_tps.interpolate(source_volume_.mDenseVoxelPosition, corresp_S_T_);
+    source_volume_.calc_tetrahedron_transform(corresp_S_T_);
+    }
+
+    {
+    target_source_tps.compute_tps(target_volume_.mVoxelPosition, emd_flow.corresp_target_source_);
+    target_source_tps.interpolate(target_volume_.mDenseVoxelPosition, corresp_T_S_);
+    target_volume_.calc_tetrahedron_transform(corresp_T_S_);
+    }
+
+    elapse = (std::clock() - start) / (Real)(CLOCKS_PER_SEC);
+    std::cout << "done! using "<< elapse <<"s\n";
+}		/* -----  end of function initial  ----- */
+
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  start_morph
+ *  Description:  
+ * =====================================================================================
+ */
+void Morph::start_morph (Real step_size)
+{
+    openvdb::FloatGrid::Ptr morph_grid = openvdb::FloatGrid::create(2.0);
+    openvdb::math::Transform::Ptr grid_transform = openvdb::math::Transform::createLinearTransform(voxel_size_);
+    morph_grid->setTransform(grid_transform);
+    morph_grid->setGridClass(openvdb::GRID_LEVEL_SET);
+
+    openvdb::Coord xyz;
+    int dim =  0.5 * 1 / voxel_size_;
+    MatrixX3r grid_vertex(8*dim*dim*dim, 3);
+
+    for(int i=-dim; i < dim; ++i)
+        for(int j=-dim; j < dim; ++j)
+            for(int k=-dim; k < dim; ++k)
+            {
+                xyz.reset(i, j, k);
+                auto voxel_pos = morph_grid->indexToWorld(xyz);
+                grid_vertex.row(4*(i+dim)*dim*dim + 2*(j+dim)*dim + k+dim) << voxel_pos[0], voxel_pos[1], voxel_pos[2];
+            }
+
+    std::cout<<"start morphing \n";
+    int steps = 1 / step_size;
+    std::string grid_name;
+    for(int i=0; i < steps; ++i)
+    {
+        std::stringstream ss;
+        ss << std::setw(4) << std::setfill('0') << i;
+        grid_name = ss.str();
+        morph_grid->setName(grid_name.c_str());
+        
+        interpolate_grids(morph_grid, grid_vertex, i*step_size);
+
+        grid_vec_.push_back(morph_grid);
+        std::cout<< i+1<<"/"<<steps<<std::endl;
+    }
+}		/* -----  end of function start_morph  ----- */
+
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  interpolate_grids
+ *  Description:  
+ * =====================================================================================
+ */
+void Morph::interpolate_grids (openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &grid_vertex, Real t)
+{
+    ThinPlateSpline source_tps, target_tps;
+    MatrixX3r corresp_source_grid_points;
+    MatrixX3r corresp_target_grid_points;
+
+    //backwards(source) mapping
+    MatrixX3r source_intermedium;
+    source_volume_.find_intermedium_points(source_intermedium, t);
+    source_tps.compute_tps(source_intermedium, source_volume_.mDenseVoxelPosition);
+    source_tps.interpolate(grid_vertex, corresp_source_grid_points);
+
+    //backwards(target) mapping
+    MatrixX3r target_intermedium;
+    target_volume_.find_intermedium_points(target_intermedium, t);
+    target_tps.compute_tps(target_intermedium, target_volume_.mDenseVoxelPosition);
+    target_tps.interpolate(grid_vertex, corresp_target_grid_points);
+
+    openvdb::FloatGrid::ConstAccessor source_accessor = source_volume_.grid->getConstAccessor();
+    openvdb::FloatGrid::ConstAccessor target_accessor = target_volume_.grid->getConstAccessor();
+
+    openvdb::tools::GridSampler<openvdb::FloatGrid::ConstAccessor, openvdb::tools::BoxSampler> source_sampler(source_accessor, source_volume_.grid->transform());
+    openvdb::tools::GridSampler<openvdb::FloatGrid::ConstAccessor, openvdb::tools::BoxSampler> target_sampler(target_accessor, target_volume_.grid->transform());
+
+    openvdb::FloatGrid::Accessor accessor = morph_grid->getAccessor();
+    openvdb::Coord xyz;
+
+    Real value;
+    int index;
+    Vector3r source_vert, target_vert;
+    int dim = 0.5 * 1 / voxel_size_;
+    for(int i=-dim; i < dim; ++i)
+        for(int j=-dim; j < dim; ++j)
+            for(int k=-dim; k < dim; ++k)
+            {
+                xyz.reset(i, j, k);
+                index = 4*(i+dim)*dim*dim + 2*(j+dim)*dim + k+dim;
+
+                source_vert = source_intermedium.row(index);
+                target_vert = target_intermedium.row(index);
+                value = (1-t) * source_sampler.wsSample(openvdb::Vec3d(source_vert(0), source_vert(1), source_vert(2)))
+                    + t * target_sampler.wsSample(openvdb::Vec3R(target_vert(0), target_vert(1), target_vert(2)));
+                accessor.setValue(xyz, value);
+            }
+
+    openvdb::tools::signedFloodFill(morph_grid->tree());
+}		/* -----  end of function interpolate_grids  ----- */
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  write_sequence
+ *  Description:  
+ * =====================================================================================
+ */
+void Morph::write_sequence(std::string grid_name)
+{
+    if(grid_name.empty())
+    {
+        std::size_t found = target_mesh_name_.find_last_of("/\\");
+        grid_name = source_mesh_name_.substr(0, source_mesh_name_.size()-4) + "_" 
+            + target_mesh_name_.substr(found+1, target_mesh_name_.size()-found-5) + ".vdb";
+    }
+
+    openvdb::io::File file(grid_name);
+    file.setCompression(openvdb::io::COMPRESS_ZIP|openvdb::io::COMPRESS_ACTIVE_MASK);
+
+    openvdb::GridPtrVec grids;
+    for(int i=0; i < grid_vec_.size(); ++i)
+    {
+        grids.push_back(grid_vec_[i]);
+    }
+
+    file.write(grids);
+    file.close();
+}		/* -----  end of function write_sequence  ----- */
+
