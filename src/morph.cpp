@@ -16,6 +16,7 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <algorithm>
 #include <openvdb/tools/Prune.h>
 #include <openvdb/tools/Interpolation.h>
 #include <openvdb/tools/SignedFloodFill.h>
@@ -115,9 +116,9 @@ void Morph::start_morph (Real step_size)
     std::cout<<"start morphing \n";
     int steps = 1 / step_size;
     std::string grid_name;
-    for(int i=0; i < steps; ++i)
+    for(int i=0; i <= steps; ++i)
     {
-        std::cout<< i+1<<"/"<<steps<<std::endl;
+        std::cout<< i <<"/"<<steps<<std::endl;
 
         openvdb::FloatGrid::Ptr morph_grid = openvdb::FloatGrid::create(2.0);
         morph_grid->setTransform(grid_transform);
@@ -141,11 +142,13 @@ void Morph::start_morph (Real step_size)
  *  Description:  
  * =====================================================================================
  */
-void Morph::interpolate_grids (openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &grid_vertex, Real t)
+void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &grid_vertex, Real t)
 {
     ThinPlateSpline source_tps, target_tps;
     MatrixX3r corresp_source_grid_points;
     MatrixX3r corresp_target_grid_points;
+
+    t = std::min(std::max(0.0, t), 1.0);
 
     //backwards(source) mapping
     MatrixX3r source_intermedium;
@@ -158,7 +161,7 @@ void Morph::interpolate_grids (openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &g
     //backwards(target) mapping
     MatrixX3r target_intermedium;
     std::cout <<"target ";
-    target_volume_.find_intermedium_points(target_intermedium, t);
+    target_volume_.find_intermedium_points(target_intermedium, 1-t);
     std::cout<<"backwards to target ";
     target_tps.compute_tps(target_intermedium, target_volume_.mDenseVoxelPosition);
     target_tps.interpolate(grid_vertex, corresp_target_grid_points);
@@ -190,8 +193,8 @@ void Morph::interpolate_grids (openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &g
                 accessor.setValue(xyz, value);
             }
 
-    openvdb::tools::pruneInactive(morph_grid->tree());
     openvdb::tools::signedFloodFill(morph_grid->tree());
+    openvdb::tools::pruneInactive(morph_grid->tree());
 }		/* -----  end of function interpolate_grids  ----- */
 
 /* 
