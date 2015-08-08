@@ -28,8 +28,12 @@ Morph::Morph(std::string source_mesh_name, std::string target_mesh_name, Corresp
     corresp_pairs_(corresp_pairs),
     voxel_size_(voxel_size)
 {
+    /*
     source_volume_ = VolumeObject(source_mesh_name, voxel_size);
     target_volume_ = VolumeObject(target_mesh_name, voxel_size);
+    */
+    source_volume_.initial(source_mesh_name, voxel_size);
+    target_volume_.initial(target_mesh_name, voxel_size);
 
     for(int i=0; i < corresp_pairs_.size(); ++i)
     {
@@ -64,23 +68,45 @@ void Morph::initial()
     //could be parallel
     source_volume_.calc_vector_field();  
     target_volume_.calc_vector_field();
-    
+
     EMD emd_flow;
-    emd_flow.construct_correspondence(source_volume_, target_volume_);
+    //emd_flow.construct_correspondence(source_volume_, target_volume_);
+    emd_flow.min_cost_flow(source_volume_, target_volume_);
+    emd_flow.find_correspondence(source_volume_, target_volume_);
 
     ThinPlateSpline source_target_tps, target_source_tps;
 
-    {
+    
     source_target_tps.compute_tps(source_volume_.mVoxelPosition, emd_flow.corresp_source_target_);
     source_target_tps.interpolate(source_volume_.mDenseVoxelPosition, corresp_S_T_);
     source_volume_.calc_tetrahedron_transform(corresp_S_T_);
-    }
+    
+    /*  
+    std::ofstream output_source_emd("source_emd.dat");
+    output_source_emd << emd_flow.corresp_source_target_;
+    output_source_emd.close();
 
-    {
+    std::ofstream output_source_voxel("source_voxel.dat");
+    output_source_voxel<< source_volume_.mDenseVoxelPosition;
+    output_source_voxel.close();
+    std::ofstream output_source_corresp("source_corresp.dat");
+    output_source_voxel << corresp_S_T_;
+    output_source_voxel.close();
+    */
+
+    /*  
     target_source_tps.compute_tps(target_volume_.mVoxelPosition, emd_flow.corresp_target_source_);
     target_source_tps.interpolate(target_volume_.mDenseVoxelPosition, corresp_T_S_);
     target_volume_.calc_tetrahedron_transform(corresp_T_S_);
-    }
+    
+
+    std::ofstream output_target_voxel("target_voxel.dat");
+    output_target_voxel<< target_volume_.mDenseVoxelPosition;
+    output_target_voxel.close();
+    std::ofstream output_target_corresp("target_corresp.dat");
+    output_target_voxel << corresp_T_S_;
+    output_target_voxel.close();
+    */
 
     elapse = (std::clock() - start) / (Real)(CLOCKS_PER_SEC);
     std::cout << "done! using "<< elapse <<"s\n";
@@ -154,6 +180,17 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     MatrixX3r source_intermedium;
     std::cout<<"source ";
     source_volume_.find_intermedium_points(source_intermedium, t);
+
+    /*  
+    std::ofstream output_source_tps("source_intermedium.dat");
+    output_source_tps << source_intermedium;
+    output_source_tps.close();
+
+    std::ofstream output_source_voxel("source_voxel.dat");
+    output_source_voxel << source_volume_.mDenseVoxelPosition;
+    output_source_voxel.close();
+    */
+
     std::cout<<"backwards to source ";
     source_tps.compute_tps(source_intermedium, source_volume_.mDenseVoxelPosition);
     source_tps.interpolate(grid_vertex, corresp_source_grid_points);
@@ -163,6 +200,17 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     std::cout <<"target ";
     target_volume_.find_intermedium_points(target_intermedium, 1-t);
     std::cout<<"backwards to target ";
+
+    /*  
+    std::ofstream output_target_tps("target_intermedium.dat");
+    output_target_tps << target_intermedium;
+    output_target_tps.close();
+
+    std::ofstream output_target_voxel("target_voxel.dat");
+    output_target_voxel << target_volume_.mDenseVoxelPosition;
+    output_target_voxel.close();
+    */
+
     target_tps.compute_tps(target_intermedium, target_volume_.mDenseVoxelPosition);
     target_tps.interpolate(grid_vertex, corresp_target_grid_points);
 

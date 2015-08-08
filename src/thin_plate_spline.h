@@ -29,7 +29,7 @@ public:
     inline Real kernel(Real r2);
     void interpolate(const MatrixX3r &input, MatrixX3r &output);
 
-private:
+//private:
     Real m_lambda;
     MatrixX3r mControlPoints;
     // size (v_num + 4) * 3

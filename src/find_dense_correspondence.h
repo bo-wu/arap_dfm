@@ -27,7 +27,7 @@ public:
     MatrixX3r corresp_source_target_;
     //correspondence from target voxel point to source (some point)
     MatrixX3r corresp_target_source_;
-private:
+//private:
     SpMat flow_matrix_;
     void find_correspondence(const VolumeObject &s, const VolumeObject &t);
     void min_cost_flow(const VolumeObject &s, const VolumeObject &t);

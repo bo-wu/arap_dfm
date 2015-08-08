@@ -156,7 +156,10 @@ void ThinPlateSpline::interpolate(const MatrixX3r &input, MatrixX3r &output)
 {
     int input_rows = input.rows();
     int control_num = mControlPoints.rows();
+
+    output = MatrixX3r::Zero(input_rows, 3);
     MatrixXr L_matrix(input_rows, control_num+4);
+
 #ifdef PARALLEL_OMP_
 #pragma omp parallel for 
 #endif

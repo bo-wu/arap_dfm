@@ -336,6 +336,7 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
     std::vector<MyTriplet> tet_triplet_list;
     tet_triplet_list.reserve(6*tet_num+anchor_num);
 
+    std::ofstream output_transform("transform.dat");
     // construct L and B
     for(int i=0; i < tet_num; i++)
     {
@@ -351,6 +352,10 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
         quat_res = quat_I.slerp(t, quat);
         M = quat_res.toRotationMatrix() * ( (1-t)*mat_I + t*mTetTransform[i].second );
 
+        output_transform <<"R\n"<< mTetTransform[i].first <<"\nS\n"<<mTetTransform[i].second;
+        output_transform <<"\nR*S\n"<<mTetTransform[i].first * mTetTransform[i].second;
+        output_transform <<"\nM\n" << M <<"\n\n";
+
         for(int j=0; j < 4; ++j)
         {
             tet_vert.row(j) = M * mDenseVoxelPosition.row(mTetIndex[i](j)).transpose();
@@ -363,6 +368,7 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
             B.row(3*i+k) = tet_vert.row(0) - tet_vert.row(k+1);
         }
     }
+    output_transform.close();
 
     // choose anchor points
     Real weight = 10.0;
