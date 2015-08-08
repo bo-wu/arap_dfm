@@ -28,12 +28,13 @@ Morph::Morph(std::string source_mesh_name, std::string target_mesh_name, Corresp
     corresp_pairs_(corresp_pairs),
     voxel_size_(voxel_size)
 {
-    /*
     source_volume_ = VolumeObject(source_mesh_name, voxel_size);
     target_volume_ = VolumeObject(target_mesh_name, voxel_size);
-    */
+
+    /*
     source_volume_.initial(source_mesh_name, voxel_size);
     target_volume_.initial(target_mesh_name, voxel_size);
+    */
 
     for(int i=0; i < corresp_pairs_.size(); ++i)
     {
@@ -85,7 +86,6 @@ void Morph::initial()
     std::ofstream output_source_emd("source_emd.dat");
     output_source_emd << emd_flow.corresp_source_target_;
     output_source_emd.close();
-
     std::ofstream output_source_voxel("source_voxel.dat");
     output_source_voxel<< source_volume_.mDenseVoxelPosition;
     output_source_voxel.close();
@@ -94,12 +94,11 @@ void Morph::initial()
     output_source_voxel.close();
     */
 
-    /*  
     target_source_tps.compute_tps(target_volume_.mVoxelPosition, emd_flow.corresp_target_source_);
     target_source_tps.interpolate(target_volume_.mDenseVoxelPosition, corresp_T_S_);
     target_volume_.calc_tetrahedron_transform(corresp_T_S_);
     
-
+    /*  
     std::ofstream output_target_voxel("target_voxel.dat");
     output_target_voxel<< target_volume_.mDenseVoxelPosition;
     output_target_voxel.close();
@@ -109,7 +108,7 @@ void Morph::initial()
     */
 
     elapse = (std::clock() - start) / (Real)(CLOCKS_PER_SEC);
-    std::cout << "done! using "<< elapse <<"s\n";
+    std::cout << "done!     morph initial uses "<< elapse <<"s\n";
 }		/* -----  end of function initial  ----- */
 
 
@@ -142,10 +141,11 @@ void Morph::start_morph (Real step_size)
     std::cout<<"start morphing \n";
     int steps = 1 / step_size;
     std::string grid_name;
+    Real elapse;
+    std::clock_t start;
     for(int i=0; i <= steps; ++i)
     {
-        std::cout<< i <<"/"<<steps<<std::endl;
-
+        start = std::clock();
         openvdb::FloatGrid::Ptr morph_grid = openvdb::FloatGrid::create(2.0);
         morph_grid->setTransform(grid_transform);
         morph_grid->setGridClass(openvdb::GRID_LEVEL_SET);
@@ -157,6 +157,8 @@ void Morph::start_morph (Real step_size)
         
         interpolate_grids(morph_grid, grid_vertex, i*step_size);
 
+        elapse = (std::clock() - start) / (Real)(CLOCKS_PER_SEC);
+        std::cout<< i <<"/"<<steps << " totally use "<<elapse<<"s"<<std::endl;
         grid_vec_.push_back(morph_grid);
     }
 }		/* -----  end of function start_morph  ----- */
@@ -185,7 +187,6 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     std::ofstream output_source_tps("source_intermedium.dat");
     output_source_tps << source_intermedium;
     output_source_tps.close();
-
     std::ofstream output_source_voxel("source_voxel.dat");
     output_source_voxel << source_volume_.mDenseVoxelPosition;
     output_source_voxel.close();
@@ -205,7 +206,6 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     std::ofstream output_target_tps("target_intermedium.dat");
     output_target_tps << target_intermedium;
     output_target_tps.close();
-
     std::ofstream output_target_voxel("target_voxel.dat");
     output_target_voxel << target_volume_.mDenseVoxelPosition;
     output_target_voxel.close();

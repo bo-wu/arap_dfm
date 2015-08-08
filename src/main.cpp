@@ -29,18 +29,13 @@ int main(int argc, char** argv)
     }
     // read positions from skeleton correspondence
     std::vector<std::pair<Vector3r, Vector3r> > corresp_pairs;
-    corresp_pairs.push_back(std::make_pair(Vector3r(-0.12, -0.48, -0.06), Vector3r(-0.1, -0.35, -0.42)));
-    corresp_pairs.push_back(std::make_pair(Vector3r(0.0, 0.48, 0.12), Vector3r(0.1, 0.08, 0.0)));
-    /*  
     corresp_pairs.push_back(std::make_pair(Vector3r(-0.1, -0.35, -0.42), Vector3r(-0.12, -0.48, -0.06)));
     corresp_pairs.push_back(std::make_pair(Vector3r(0.1, 0.08, 0.0), Vector3r(0.0, 0.48, 0.12)));
-    */
+
     Morph morph(argv[1], argv[2], corresp_pairs, 0.02);
     morph.initial();
-    /*  
     morph.start_morph(0.5);
     morph.write_sequence();
-    */
     
 /*
     Real voxel_size = 0.02;

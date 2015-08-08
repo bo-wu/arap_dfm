@@ -54,12 +54,15 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t)
     }
     corresp_source_target_ *= s.voxel_num_;
     corresp_target_source_ *= t.voxel_num_;
+
+    /* //for debug
     std::ofstream output_st("corresp_st.dat");
     output_st << corresp_source_target_;
     output_st.close();
     std::ofstream output_ts("corresp_ts.dat");
     output_ts << corresp_target_source_;
     output_st.close();
+    */
 }		/* -----  end of function find_correspondence ----- */
 
 
@@ -118,6 +121,9 @@ void EMD::min_cost_flow(const VolumeObject &s, const VolumeObject &t)
             }
         }
     flow_matrix_.setFromTriplets(flow_trip.begin(), flow_trip.end());
+
+
+/*  // for debug
     std::ofstream output_flow_row("flow_row.dat");
     std::ofstream output_flow_col("flow_col.dat");
     for(int i=0; i < s.voxel_num_; ++i)
@@ -130,6 +136,5 @@ void EMD::min_cost_flow(const VolumeObject &s, const VolumeObject &t)
     }
     output_flow_row.close();
     output_flow_col.close();
-/*  
 */
 }		/* -----  end of function min_cost_flow  ----- */
