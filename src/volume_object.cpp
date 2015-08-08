@@ -442,7 +442,7 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
 
 ///////////////////////////////////////////
 //read_mesh
-void VolumeObject::read_mesh(bool resize)
+void VolumeObject::read_mesh(bool resize, bool b_out)
 {
 	if(!OpenMesh::IO::read_mesh(mesh, mesh_name))	
 	{
@@ -480,6 +480,15 @@ void VolumeObject::read_mesh(bool resize)
 		}
 		points.push_back(v_pos);
 	}
+
+    if(b_out)
+    {
+        if(!OpenMesh::IO::write_mesh(mesh, mesh_name.c_str()))
+        {
+            std::cerr << "write mesh on disk error\n";
+            exit(-1);
+        }
+    }
 
 	//fill triangles
 	TriMesh::FaceIter f_it;

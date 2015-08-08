@@ -56,7 +56,7 @@ public:
 	//compute vector field on anchor points
     void construct_laplace_matrix();
 	void calc_vector_field(); // harmonic field for distance 
-	void read_mesh(bool resize=true); 
+	void read_mesh(bool resize=true, bool b_out=true); 
 	void write_grid(std::string name); // output for test
     void test_volume(); //for debug
     void set_anchors(const std::vector<Vector3r>& anchors);
