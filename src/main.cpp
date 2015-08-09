@@ -28,13 +28,14 @@ int main(int argc, char** argv)
         return 0;
     }
     // read positions from skeleton correspondence
+    // head, left front, right front, left behind, right behind, tail
     std::vector<std::pair<Vector3r, Vector3r> > corresp_pairs;
-    corresp_pairs.push_back(std::make_pair(Vector3r(0.1013, -0.152, 0.1176), Vector3r(0.107, -0.498, 0.426)));
-    corresp_pairs.push_back(std::make_pair(Vector3r(-0.0968, -0.4915, 0.1276), Vector3r(-0.0846, -0.4946, 0.161)));
-    corresp_pairs.push_back(std::make_pair(Vector3r(0.1171, -0.478, -0.37), Vector3r(0.1745, -0.493, -0.3818)));
-    corresp_pairs.push_back(std::make_pair(Vector3r(-0.133, -0.413, -0.41), Vector3r(-0.091, -0.492, -0.0034)));
-    corresp_pairs.push_back(std::make_pair(Vector3r(0.0082, 0.214, -0.4), Vector3r(-0.0077, 0.1116, -0.2746)));
-    corresp_pairs.push_back(std::make_pair(Vector3r(-0.0016, 0.33, 0.485), Vector3r(-0.074, 0.254, 0.279)));
+    corresp_pairs.push_back(std::make_pair(Vector3r(-0.001, 0.338, 0.4846), Vector3r(-0.2, 0.301, 0.248)));
+    corresp_pairs.push_back(std::make_pair(Vector3r(-0.127, -0.41, 0.157), Vector3r(-0.098, -0.487, 0.2)));
+    corresp_pairs.push_back(std::make_pair(Vector3r(0.131, -0.407, 0.158), Vector3r(0.096, -0.48, 0.439)));
+    corresp_pairs.push_back(std::make_pair(Vector3r(-0.139, -0.387, -0.377), Vector3r(-0.1168, -0.48, 0.001)));
+    corresp_pairs.push_back(std::make_pair(Vector3r(0.138, -0.39, -0.376), Vector3r(0.1514, -0.468, -0.3248)));
+    corresp_pairs.push_back(std::make_pair(Vector3r(-0.0040, 0.213, -0.401), Vector3r(0.0449, 0.118, -0.344)));
 
     Morph morph(argv[1], argv[2], corresp_pairs, 0.02);
     morph.initial();
