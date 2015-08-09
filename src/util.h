@@ -18,8 +18,9 @@
 #include <fstream>
 #include "def_types.h"
 
-void matrix_to_point_cloud(const MatrixXr &points, std::string name)
+void matrix_to_point_cloud_file(const MatrixXr &points, std::string name)
 {
+    std::string data_name = name + ".dat";
     name = name + ".obj";
     std::ofstream output_point(name.c_str());
     int p_num = points.rows();
@@ -29,6 +30,10 @@ void matrix_to_point_cloud(const MatrixXr &points, std::string name)
         output_point << "v "<<points.row(i)<<std::endl;
     }
     output_point.close();
+
+    std::ofstream output_point_data(data_name.c_str());
+    output_point_data << points;
+    output_point_data.close();
 }
 
 #endif

@@ -82,8 +82,12 @@ void Morph::initial()
     source_target_tps.interpolate(source_volume_.mDenseVoxelPosition, corresp_S_T_);
     source_volume_.calc_tetrahedron_transform(corresp_S_T_);
     
+
+    matrix_to_point_cloud_file(emd_flow.corresp_source_target_, "source_emd");
+    matrix_to_point_cloud_file(emd_flow.corresp_target_source_, "target_emd");
+    matrix_to_point_cloud_file(source_volume_.mDenseVoxelPosition, "source_voxel");
+    matrix_to_point_cloud_file(target_volume_.mDenseVoxelPosition, "target_voxel");
     /*  
-    */
     std::ofstream output_source_emd("source_emd.dat");
     output_source_emd << emd_flow.corresp_source_target_;
     output_source_emd.close();
@@ -94,11 +98,16 @@ void Morph::initial()
     std::ofstream output_source_corresp("source_corresp.dat");
     output_source_corresp << corresp_S_T_;
     output_source_corresp.close();
+    */
 
     target_source_tps.compute_tps(target_volume_.mVoxelPosition, emd_flow.corresp_target_source_);
     target_source_tps.interpolate(target_volume_.mDenseVoxelPosition, corresp_T_S_);
     target_volume_.calc_tetrahedron_transform(corresp_T_S_);
+
+    matrix_to_point_cloud_file(corresp_S_T_, "source_corresp");
+    matrix_to_point_cloud_file(corresp_T_S_, "target_corresp");
     
+    /*  
     std::ofstream output_target_emd("target_emd.dat");
     output_target_emd << emd_flow.corresp_target_source_;
     output_target_emd.close();
@@ -109,7 +118,6 @@ void Morph::initial()
     std::ofstream output_target_corresp("target_corresp.dat");
     output_target_voxel << corresp_T_S_;
     output_target_voxel.close();
-    /*  
     */
 
     elapse = (std::clock() - start) / (Real)(CLOCKS_PER_SEC);
