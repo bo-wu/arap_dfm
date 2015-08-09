@@ -43,17 +43,49 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t)
 {
     corresp_source_target_ = MatrixX3r::Zero(s.voxel_num_, 3);
     corresp_target_source_ = MatrixX3r::Zero(t.voxel_num_, 3);
+    VectorXi index_each_row = VectorXi::Ones(s.voxel_num_); //store max value col index
+    VectorXr max_each_row = VectorXr::Zero(s.voxel_num_);
+    VectorXi index_each_col = VectorXi::Ones(t.voxel_num_); //store max vlaue row index
+    VectorXr max_each_col = VectorXr::Zero(t.voxel_num_);
+    index_each_row *= -1;
+    index_each_col *= -1;
 
     for(int i=0; i < flow_matrix_.outerSize(); ++i)
     {
         for(SpMat::InnerIterator it(flow_matrix_, i); it; ++it)
         {
+            if (max_each_row(it.row()) < it.value())
+            {
+                max_each_row(it.row()) = it.value();
+                index_each_row(it.row()) = it.col();
+            }
+
+            if (max_each_col(it.col()) < it.value())
+            {
+                max_each_col(it.col()) = it.value();
+                index_each_col(it.col()) = it.row();
+            }
+            /*  
             corresp_source_target_.row(it.row()) += it.value() * t.mVoxelPosition.row(it.col());
             corresp_target_source_.row(it.col()) += it.value() * s.mVoxelPosition.row(it.row());
+            */
         }
     }
+
+    for(int i=0; i < s.voxel_num_; ++i)
+    {
+        corresp_source_target_.row(i) = t.mVoxelPosition.row(index_each_row(i));
+    }
+
+    for(int i=0; i < t.voxel_num_; ++i)
+    {
+        corresp_target_source_.row(i) = s.mVoxelPosition.row(index_each_col(i));
+    }
+
+    /*  
     corresp_source_target_ *= s.voxel_num_;
     corresp_target_source_ *= t.voxel_num_;
+    */
 
     /* //for debug
     std::ofstream output_st("corresp_st.dat");
