@@ -21,6 +21,7 @@
 #include <openvdb/tools/Interpolation.h>
 #include <openvdb/tools/SignedFloodFill.h>
 #include "morph.h"
+#include "util.h"
 
 Morph::Morph(std::string source_mesh_name, std::string target_mesh_name, CorrespType corresp_pairs, Real voxel_size) : 
     source_mesh_name_(source_mesh_name),
@@ -76,28 +77,32 @@ void Morph::initial()
     emd_flow.find_correspondence(source_volume_, target_volume_);
 
     ThinPlateSpline source_target_tps, target_source_tps;
-
     
     source_target_tps.compute_tps(source_volume_.mVoxelPosition, emd_flow.corresp_source_target_);
     source_target_tps.interpolate(source_volume_.mDenseVoxelPosition, corresp_S_T_);
     source_volume_.calc_tetrahedron_transform(corresp_S_T_);
     
     /*  
+    */
     std::ofstream output_source_emd("source_emd.dat");
     output_source_emd << emd_flow.corresp_source_target_;
     output_source_emd.close();
-    */
+
     std::ofstream output_source_voxel("source_voxel.dat");
     output_source_voxel<< source_volume_.mDenseVoxelPosition;
     output_source_voxel.close();
     std::ofstream output_source_corresp("source_corresp.dat");
-    output_source_voxel << corresp_S_T_;
-    output_source_voxel.close();
+    output_source_corresp << corresp_S_T_;
+    output_source_corresp.close();
 
     target_source_tps.compute_tps(target_volume_.mVoxelPosition, emd_flow.corresp_target_source_);
     target_source_tps.interpolate(target_volume_.mDenseVoxelPosition, corresp_T_S_);
     target_volume_.calc_tetrahedron_transform(corresp_T_S_);
     
+    std::ofstream output_target_emd("target_emd.dat");
+    output_target_emd << emd_flow.corresp_target_source_;
+    output_target_emd.close();
+
     std::ofstream output_target_voxel("target_voxel.dat");
     output_target_voxel<< target_volume_.mDenseVoxelPosition;
     output_target_voxel.close();
