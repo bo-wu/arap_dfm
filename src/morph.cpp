@@ -87,6 +87,14 @@ void Morph::initial()
     matrix_to_point_cloud_file(emd_flow.corresp_target_source_, "target_emd");
     matrix_to_point_cloud_file(source_volume_.mDenseVoxelPosition, "source_voxel");
     matrix_to_point_cloud_file(target_volume_.mDenseVoxelPosition, "target_voxel");
+
+    std::ofstream output_source_dist("source_dist.dat");
+    output_source_dist << source_volume_.distance_vector_field;
+    output_source_dist.close();
+    std::ofstream output_target_dist("target_dist.dat");
+    output_target_dist << target_volume_.distance_vector_field;
+    output_target_dist.close();
+
     /*  
     std::ofstream output_source_emd("source_emd.dat");
     output_source_emd << emd_flow.corresp_source_target_;
