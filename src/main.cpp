@@ -29,13 +29,17 @@ int main(int argc, char** argv)
     }
     // read positions from skeleton correspondence
     std::vector<std::pair<Vector3r, Vector3r> > corresp_pairs;
-    corresp_pairs.push_back(std::make_pair(Vector3r(-0.1, -0.35, -0.42), Vector3r(-0.12, -0.48, -0.06)));
-    corresp_pairs.push_back(std::make_pair(Vector3r(0.1, 0.08, 0.0), Vector3r(0.0, 0.48, 0.12)));
+    corresp_pairs.push_back(std::make_pair(Vector3r(0.1013, -0.152, 0.1176), Vector3r(0.107, -0.498, 0.426)));
+    corresp_pairs.push_back(std::make_pair(Vector3r(-0.0968, -0.4915, 0.1276), Vector3r(-0.0846, -0.4946, 0.161)));
+    corresp_pairs.push_back(std::make_pair(Vector3r(0.1171, -0.478, -0.37), Vector3r(0.1745, -0.493, -0.3818)));
+    corresp_pairs.push_back(std::make_pair(Vector3r(-0.133, -0.413, -0.41), Vector3r(-0.091, -0.492, -0.0034)));
+    corresp_pairs.push_back(std::make_pair(Vector3r(0.0082, 0.214, -0.4), Vector3r(-0.0077, 0.1116, -0.2746)));
+    corresp_pairs.push_back(std::make_pair(Vector3r(-0.0016, 0.33, 0.485), Vector3r(-0.074, 0.254, 0.279)));
 
     Morph morph(argv[1], argv[2], corresp_pairs, 0.02);
     morph.initial();
-    morph.start_morph(0.25);
-    morph.write_sequence();
+//    morph.start_morph(0.25);
+//    morph.write_sequence();
     
 /*
     Real voxel_size = 0.02;
