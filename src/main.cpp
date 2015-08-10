@@ -16,7 +16,7 @@
 #include <OpenMesh/Core/IO/MeshIO.hh>
 #include "def_types.h"
 #include "volume_object.h"
-#include "find_dense_correspondence.h"
+#include "dense_correspondence.h"
 #include "thin_plate_spline.h"
 #include "morph.h"
 

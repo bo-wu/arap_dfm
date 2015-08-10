@@ -19,7 +19,7 @@
 #include "def_types.h"
 #include "volume_object.h"
 #include "thin_plate_spline.h"
-#include "find_dense_correspondence.h"
+#include "dense_correspondence.h"
 
 struct Morph
 {

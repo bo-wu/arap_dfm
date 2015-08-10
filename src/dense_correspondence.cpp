@@ -15,7 +15,7 @@
 #include <cmath>
 #include <iostream>
 #include <fstream>
-#include "find_dense_correspondence.h"
+#include "dense_correspondence.h"
 #include "full_bipartitegraph.h"
 #include "network_simplex_simple.h"
 #include "def_types.h"

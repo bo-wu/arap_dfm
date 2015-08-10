@@ -240,6 +240,8 @@ void VolumeObject::calc_vector_field()
     output_laplace << mLaplaceMatrix;
     output_laplace.close();
     */
+
+    /*   // solving use igl
     igl::min_quad_with_fixed_data<Real> mqwf;
     int num_row = constraint_index_.rows();
     VectorXr B = VectorXr::Zero(voxel_num_, 1);
@@ -248,11 +250,6 @@ void VolumeObject::calc_vector_field()
     VectorXr Beq;
     igl::min_quad_with_fixed_precompute(mLaplaceMatrix, constraint_index_, Aeq, true, mqwf);
     VectorXr D;
-    /*  
-    std::ofstream output_constraint_index("constraint_index.dat");
-    output_constraint_index << constraint_index_;
-    output_constraint_index.close();
-    */
     // solve equation with constraint
     for(int i=0; i < num_row; ++i)
     {
@@ -261,6 +258,14 @@ void VolumeObject::calc_vector_field()
         igl::min_quad_with_fixed_solve(mqwf, B, constraint_value, Beq, D);
         distance_vector_field.col(i) = D;
     }
+    */
+
+
+    /*  
+    std::ofstream output_constraint_index("constraint_index.dat");
+    output_constraint_index << constraint_index_;
+    output_constraint_index.close();
+    */
 }		/* -----  end of function calc_vector_field  ----- */
 
 
