@@ -15,6 +15,7 @@
 #include <cmath>
 #include <iostream>
 #include <fstream>
+#include <nanoflann.hpp>
 #include "dense_correspondence.h"
 #include "full_bipartitegraph.h"
 #include "network_simplex_simple.h"
@@ -28,8 +29,9 @@
  */
 void EMD::construct_correspondence(const VolumeObject &s, const VolumeObject &t)
 {
-    min_cost_flow(s, t);
-    find_correspondence(s, t);
+ //   min_cost_flow(s, t);
+    direct_correspondence(s, t);
+    //find_correspondence(s, t);
 }		/* -----  end of function construct_correspondence  ----- */
 
 
@@ -170,3 +172,57 @@ void EMD::min_cost_flow(const VolumeObject &s, const VolumeObject &t)
     output_flow_col.close();
 */
 }		/* -----  end of function min_cost_flow  ----- */
+
+
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  direct_correspondence
+ *  Description:  directly use harmonic field to get correspondence
+ * =====================================================================================
+ */
+void EMD::direct_correspondence(const VolumeObject &s, const VolumeObject &t)
+{
+    int knn_num = 1;
+    corresp_source_target_ = MatrixX3r::Zero(s.voxel_num_, 3);
+    corresp_target_source_ = MatrixX3r::Zero(t.voxel_num_, 3);
+
+    const int anchor_num = s.mAnchors.size();
+
+    typedef nanoflann::KDTreeEigenMatrixAdaptor<MatrixXr, -1, nanoflann::metric_L2_Simple> KDTreeType;
+    KDTreeType source_harmonic_kdtree(anchor_num, s.distance_vector_field);
+    source_harmonic_kdtree.index->buildIndex();
+
+    long int out_index[knn_num];
+    Real out_distances_sq[knn_num];
+
+    Real w = 0;
+    for(int i=0; i < t.voxel_num_; ++i)
+    {
+        w = 0;
+        source_harmonic_kdtree.query(t.distance_vector_field.row(i).data(), knn_num, out_index, out_distances_sq);
+        for(int j=0; j < knn_num; ++j)
+        {
+            w += 1.0 / out_distances_sq[j];
+            corresp_target_source_.row(i) += (1.0 / out_distances_sq[j]) * s.mVoxelPosition.row(out_index[j]);
+        }
+
+        corresp_target_source_.row(i) /= w;
+    }
+
+    KDTreeType target_harmonic_kdtree(anchor_num, t.distance_vector_field);
+    target_harmonic_kdtree.index->buildIndex();
+
+    for(int i=0; i < s.voxel_num_; ++i)
+    {
+        w = 0;
+        target_harmonic_kdtree.query(s.distance_vector_field.row(i).data(), knn_num, out_index, out_distances_sq);
+        for(int j=0; j < knn_num; ++j)
+        {
+            w += 1.0 / out_distances_sq[j];
+            corresp_source_target_.row(i) += (1.0 / out_distances_sq[j]) * t.mVoxelPosition.row(out_index[j]);
+        }
+        corresp_source_target_.row(i) /= w;
+    }
+
+}		/* -----  end of function direct_correspondence  ----- */

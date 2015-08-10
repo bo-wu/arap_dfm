@@ -242,6 +242,7 @@ void VolumeObject::calc_vector_field()
     */
 
     /*   // solving use igl
+    */
     igl::min_quad_with_fixed_data<Real> mqwf;
     int num_row = constraint_index_.rows();
     VectorXr B = VectorXr::Zero(voxel_num_, 1);
@@ -258,7 +259,6 @@ void VolumeObject::calc_vector_field()
         igl::min_quad_with_fixed_solve(mqwf, B, constraint_value, Beq, D);
         distance_vector_field.col(i) = D;
     }
-    */
 
 
     /*  

@@ -21,7 +21,7 @@ class EMD
 {
 public:
     EMD() {}
-
+    
     void construct_correspondence(const VolumeObject &s, const VolumeObject &t);
     //correspondence from source voxel point to target (some point)
     MatrixX3r corresp_source_target_;
@@ -31,6 +31,7 @@ public:
     SpMat flow_matrix_;
     void find_correspondence(const VolumeObject &s, const VolumeObject &t);
     void min_cost_flow(const VolumeObject &s, const VolumeObject &t);
+    void direct_correspondence(const VolumeObject &s, const VolumeObject &t);
 };
 #endif
 

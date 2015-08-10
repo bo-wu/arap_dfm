@@ -72,9 +72,7 @@ void Morph::initial()
     target_volume_.calc_vector_field();
 
     EMD emd_flow;
-    //emd_flow.construct_correspondence(source_volume_, target_volume_);
-    emd_flow.min_cost_flow(source_volume_, target_volume_);
-    emd_flow.find_correspondence(source_volume_, target_volume_);
+    emd_flow.construct_correspondence(source_volume_, target_volume_);
 
     ThinPlateSpline source_target_tps, target_source_tps;
     
