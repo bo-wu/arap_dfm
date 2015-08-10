@@ -183,7 +183,7 @@ void EMD::min_cost_flow(const VolumeObject &s, const VolumeObject &t)
  */
 void EMD::direct_correspondence(const VolumeObject &s, const VolumeObject &t)
 {
-    int knn_num = 1;
+    int knn_num = 2;
     corresp_source_target_ = MatrixX3r::Zero(s.voxel_num_, 3);
     corresp_target_source_ = MatrixX3r::Zero(t.voxel_num_, 3);
 
@@ -196,19 +196,23 @@ void EMD::direct_correspondence(const VolumeObject &s, const VolumeObject &t)
     long int out_index[knn_num];
     Real out_distances_sq[knn_num];
 
+    std::ofstream output_knn("knn_target.dat");
     Real w = 0;
     for(int i=0; i < t.voxel_num_; ++i)
     {
         w = 0;
+        output_knn <<"voxel "<<i/*<<" ["<<t.distance_vector_field.row(i)<<"]*/ <<" neighboring source ";
         source_harmonic_kdtree.query(t.distance_vector_field.row(i).data(), knn_num, out_index, out_distances_sq);
         for(int j=0; j < knn_num; ++j)
         {
             w += 1.0 / out_distances_sq[j];
             corresp_target_source_.row(i) += (1.0 / out_distances_sq[j]) * s.mVoxelPosition.row(out_index[j]);
+            output_knn<<out_index[j] <<": "<<out_distances_sq[j]<<" "; //" ["<<s.distance_vector_field.row(out_index[j])<<"] ";
         }
-
         corresp_target_source_.row(i) /= w;
+        output_knn<<std::endl;
     }
+    output_knn.close();
 
     KDTreeType target_harmonic_kdtree(anchor_num, t.distance_vector_field);
     target_harmonic_kdtree.index->buildIndex();

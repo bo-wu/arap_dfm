@@ -66,6 +66,8 @@ public:
     // find intermedium correspondence points during morphing
     void find_intermedium_points(MatrixX3r &inter_corresp_points, const Real t=0.5);
 
+    std::vector<MyTriplet> triplet_with_constraint;
+
 };
 
 #endif

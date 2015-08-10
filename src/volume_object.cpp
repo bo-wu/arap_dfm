@@ -212,6 +212,10 @@ void VolumeObject::construct_laplace_matrix()
                     }
         }
     }
+    /////////////// use least square ///////////////////
+    triplet_with_constraint.reserve(7*voxelNum + mAnchors.size());
+    triplet_with_constraint = laplace_triplet_list;
+    /////////////////////////////////////////
     mLaplaceMatrix.setFromTriplets(laplace_triplet_list.begin(), laplace_triplet_list.end());
     // constraint part
     if (anchorNum > 0)
@@ -240,6 +244,38 @@ void VolumeObject::calc_vector_field()
     output_laplace << mLaplaceMatrix;
     output_laplace.close();
     */
+    /*  
+    Real weight = 2;
+    for(int i=0; i < constraint_index_.size(); ++i)
+    {
+        triplet_with_constraint.push_back(MyTriplet(voxel_num_+i, constraint_index_(i), weight));
+    }
+    // solve use eigen directly
+    SpMat L_with_constraint(voxel_num_+mAnchors.size(), voxel_num_);
+    L_with_constraint.setFromTriplets(triplet_with_constraint.begin(), triplet_with_constraint.end());
+    Eigen::SimplicialLDLT<SpMat> solver;
+    solver.compute(L_with_constraint.transpose() * L_with_constraint);
+    if(solver.info() != Eigen::Success)
+    {
+        std::cerr <<"compute distance vector field error\n";
+        exit(-1);
+    }
+    VectorXr B_with_constraint = VectorXr::Zero(voxel_num_+mAnchors.size(), 1);
+    for(int i=0; i < constraint_index_.size(); ++i)
+    {
+        if( i > 0 )
+        {
+            B_with_constraint(voxel_num_+i-1) = 0;
+        }
+        B_with_constraint(voxel_num_+i) = weight;
+        distance_vector_field.col(i) = solver.solve(L_with_constraint.transpose() * B_with_constraint);
+        if(solver.info() != Eigen::Success)
+        {
+            std::cerr << "LDLT solver error\n";
+            exit(-1);
+        }
+    }
+    */
 
     /*   // solving use igl
     */
@@ -259,7 +295,6 @@ void VolumeObject::calc_vector_field()
         igl::min_quad_with_fixed_solve(mqwf, B, constraint_value, Beq, D);
         distance_vector_field.col(i) = D;
     }
-
 
     /*  
     std::ofstream output_constraint_index("constraint_index.dat");
