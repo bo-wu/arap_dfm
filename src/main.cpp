@@ -40,11 +40,19 @@ int main(int argc, char** argv)
     corresp_pairs.push_back(std::make_pair(Vector3r(-0.0248, 0.06, 0.2), Vector3r(-0.003, 0.008, 0.191)));
     corresp_pairs.push_back(std::make_pair(Vector3r(0.008, 0.08, 0.11), Vector3r(0.196, 0.0, -0.105)));
     corresp_pairs.push_back(std::make_pair(Vector3r(-0.0134, 0.14, -0.153), Vector3r(0.036, 0.09, -0.22)));
+    // leg top, left front, right front, left behind, right behind
+    corresp_pairs.push_back(std::make_pair(Vector3r(-0.13, -0.068, 0.16), Vector3r(-0.0174, -0.168, 0.16)));
+    corresp_pairs.push_back(std::make_pair(Vector3r(0.106, -0.067, 0.17), Vector3r(0.0857, -0.1, 0.24)));
+    corresp_pairs.push_back(std::make_pair(Vector3r(-0.12, 0.017, -0.185), Vector3r(-0.064, -0.14, -0.135)));
+    corresp_pairs.push_back(std::make_pair(Vector3r(0.11, 0.038, -0.177), Vector3r(0.134, -0.17, -0.23)));
+    //ear left, right
+    corresp_pairs.push_back(std::make_pair(Vector3r(-0.06, 0.3815, 0.327), Vector3r(-0.03, 0.487, 0.115)));
+//    corresp_pairs.push_back(std::make_pair(Vector3r(0.08, 0.4, 0.3), Vector3r(0.018, 0.477, 0.3)));
 
-    Morph morph(argv[1], argv[2], corresp_pairs, 0.02);
+    Morph morph(argv[1], argv[2], corresp_pairs, 0.025);
     morph.initial();
-//    morph.start_morph(0.1);
-//    morph.write_sequence();
+    morph.start_morph(0.1);
+    morph.write_sequence();
     
 /*
     Real voxel_size = 0.02;
