@@ -887,7 +887,7 @@ template <typename T>
     /// \return <tt>(*this)</tt>
     template<typename Value>
     NetworkSimplexSimple& setCost(const Arc& arc, const Value cost) {      
-      _cost[getArcID(arc)] = cost;     	  
+      _cost[getArcID(arc)] = cost;;     	  
       return *this;
     }
 

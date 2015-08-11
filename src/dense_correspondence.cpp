@@ -16,6 +16,8 @@
 #include <iostream>
 #include <fstream>
 #include <nanoflann.hpp>
+#include <lemon/list_graph.h>
+#include <lemon/network_simplex.h>
 #include "dense_correspondence.h"
 #include "full_bipartitegraph.h"
 #include "network_simplex_simple.h"
@@ -32,7 +34,8 @@ void EMD::construct_correspondence(const VolumeObject &s, const VolumeObject &t)
     /*  
     direct_correspondence(s, t);
     */
-    min_cost_flow(s, t);
+    //min_cost_flow(s, t);
+    network_simplex(s, t);
     find_correspondence(s, t);
 }		/* -----  end of function construct_correspondence  ----- */
 
@@ -105,7 +108,7 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t)
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  min_cost_flow
- *  Description:  
+ *  Description:  something wrong !!!!
  * =====================================================================================
  */
 void EMD::min_cost_flow(const VolumeObject &s, const VolumeObject &t)
@@ -232,3 +235,64 @@ void EMD::direct_correspondence(const VolumeObject &s, const VolumeObject &t)
     }
 
 }		/* -----  end of function direct_correspondence  ----- */
+
+
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  network_simplex
+ *  Description:  
+ * =====================================================================================
+ */
+void EMD::network_simplex (const VolumeObject &source, const VolumeObject &target)
+{
+    lemon::ListDigraph g;
+    lemon::ListDigraph::NodeMap<int> supply(g);
+    lemon::ListDigraph::ArcMap<double> cost(g);
+    lemon::ListDigraph::ArcMap<int> flow(g);
+
+    for(int i=0; i < source.voxel_num_; ++i)
+    {
+        lemon::ListDigraph::Node m = g.addNode();
+        supply[m] = target.voxel_num_;
+    }
+
+    for(int i=0; i < target.voxel_num_; ++i)
+    {
+        lemon::ListDigraph::Node n = g.addNode();
+        supply[n] = -1 * source.voxel_num_;
+        for(lemon::ListDigraph::NodeIt s(g); s!=lemon::INVALID; ++s)
+        {
+            if(lemon::ListDigraph::id(s) < source.voxel_num_)
+            {
+                lemon::ListDigraph::Arc arc = g.addArc(s, n);
+                cost[arc] = ( source.distance_vector_field.row(lemon::ListDigraph::id(s)) - target.distance_vector_field.row(i) ).norm();
+            }
+        }
+    }
+
+    lemon::NetworkSimplex<lemon::ListDigraph, int, double> ns(g);
+    ns.costMap(cost).supplyMap(supply).run();
+    ns.flowMap(flow);
+
+    int num_flow = 2 * int(std::max(Real(source.voxel_num_) / Real(target.voxel_num_), Real(target.voxel_num_) / Real(source.voxel_num_))  * std::max(source.voxel_num_, target.voxel_num_) );
+
+    flow_matrix_ = SpMat(source.voxel_num_, target.voxel_num_);
+    std::vector<MyTriplet> flow_triplet;
+    flow_triplet.reserve(num_flow);
+
+    for(lemon::ListDigraph::ArcIt s(g); s != lemon::INVALID; ++s)
+    {
+        if(flow[s] > 1e-8)
+        {
+            flow_triplet.push_back(MyTriplet(g.id(g.source(s)), g.id(g.target(s)) - source.voxel_num_, flow[s]));
+        }
+        else if(flow[s] < 0)
+        {
+            std::cout<<"exists negative flow\n";
+        }
+    }
+
+    flow_matrix_.setFromTriplets(flow_triplet.begin(), flow_triplet.end());
+
+}		/* -----  end of function network_simplex  ----- */

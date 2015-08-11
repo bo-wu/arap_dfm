@@ -32,6 +32,7 @@ public:
     void find_correspondence(const VolumeObject &s, const VolumeObject &t);
     void min_cost_flow(const VolumeObject &s, const VolumeObject &t);
     void direct_correspondence(const VolumeObject &s, const VolumeObject &t);
+    void network_simplex(const VolumeObject &s, const VolumeObject &t);
 };
 #endif
 
