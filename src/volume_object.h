@@ -35,6 +35,7 @@ public:
     std::vector<Vector4i> mTetIndex;
     std::vector<std::pair<Matrix3r, Matrix3r> > mTetTransform;
     SpMat mLaplaceMatrix;
+    SpMat mLaplaceMatrix_18neighbor;
     Real transform_scale_;
     // constraint voxel index
     VectorXi constraint_index_;
@@ -67,6 +68,52 @@ public:
     void find_intermedium_points(MatrixX3r &inter_corresp_points, const Real t=0.5);
 
     std::vector<MyTriplet> triplet_with_constraint;
+
+    std::vector<Vector3i> get_neighbor18_index()
+    {
+        std::vector<Vector3i> neighbor18_index;
+        Vector3i temp_index;
+        temp_index << 1, 0, 1;
+        neighbor18_index.push_back(temp_index);
+        temp_index << 0, 0, 1;
+        neighbor18_index.push_back(temp_index);
+        temp_index << -1, 0, 1;
+        neighbor18_index.push_back(temp_index);
+        temp_index << 0, 1, 1;
+        neighbor18_index.push_back(temp_index);
+        temp_index << 0, -1, 1;
+        neighbor18_index.push_back(temp_index);
+
+        temp_index << -1, -1, 0;
+        neighbor18_index.push_back(temp_index);
+        temp_index << -1, 0, 0;
+        neighbor18_index.push_back(temp_index);
+        temp_index << -1, 1, 0;
+        neighbor18_index.push_back(temp_index);
+        temp_index << 0, -1, 0;
+        neighbor18_index.push_back(temp_index);
+        temp_index << 0, 1, 0;
+        neighbor18_index.push_back(temp_index);
+        temp_index << 1, -1, 0;
+        neighbor18_index.push_back(temp_index);
+        temp_index << 1, 0, 0;
+        neighbor18_index.push_back(temp_index);
+        temp_index << 1, 1, 0;
+        neighbor18_index.push_back(temp_index);
+
+        temp_index << 1, 0, -1;
+        neighbor18_index.push_back(temp_index);
+        temp_index << 0, 0, -1;
+        neighbor18_index.push_back(temp_index);
+        temp_index << -1, 0, -1;
+        neighbor18_index.push_back(temp_index);
+        temp_index << 0, 1, -1;
+        neighbor18_index.push_back(temp_index);
+        temp_index << 0, -1, -1;
+        neighbor18_index.push_back(temp_index);
+        return neighbor18_index;
+    }
+
 
 };
 

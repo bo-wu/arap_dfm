@@ -127,6 +127,7 @@ void VolumeObject::construct_laplace_matrix()
     voxel_num_ = voxelNum;
     auto anchorNum = mAnchors.size();
     mLaplaceMatrix = SpMat(voxelNum, voxelNum);
+    mLaplaceMatrix_18neighbor = SpMat(voxelNum, voxelNum);
     mVoxelPosition = MatrixX3r::Zero(voxelNum, 3);
     distance_vector_field = MatrixXr::Zero(voxelNum, anchorNum);
     int k = 0;
@@ -160,7 +161,13 @@ void VolumeObject::construct_laplace_matrix()
     std::vector<int> neighbor_index_1d; // 1 direction
 
     std::vector<MyTriplet> laplace_triplet_list;
+    // 6 neighbor
     laplace_triplet_list.reserve(7*voxelNum);
+    /*  
+    // test 18 neighbor
+    std::vector<MyTriplet> laplace_triplet_18neighbor;
+    laplace_triplet_18neighbor.reserve(19*voxelNum);
+    */
     k = 0;
     // laplace matrix
     for(auto iter=interior_grid->cbeginValueOn(); iter; ++iter, ++k)
@@ -212,10 +219,45 @@ void VolumeObject::construct_laplace_matrix()
                     }
         }
     }
+
+    /*  
+    std::vector<Vector3i> neighbor18_index = get_neighbor18_index();
+    k = 0;
+    for(auto iter=interior_grid->cbeginValueOn(); iter; ++iter, ++k)
+    {
+        v_coord = iter.getCoord();
+        auto temp_coord = v_coord;
+        degree = 0;
+        for(int i=0; i < neighbor18_index.size(); ++i)
+        {
+            for(int j=0; j < 3; ++j)
+            {
+                temp_coord[j] = v_coord[j] + neighbor18_index[i](j);
+                if(interior_grid->tree().isValueOn(temp_coord))
+                {
+                    ++degree;
+                    auto voxel_pos = grid->indexToWorld(temp_coord);
+                    v_world_pos << voxel_pos[0], voxel_pos[1], voxel_pos[2];
+                    voxelKDTree.query(v_world_pos.data(), 1, &outIndex, &outDistance);
+                    if(outDistance > 1.0e-5)
+                    {
+                        std::cerr <<"Distance "<<outDistance<<" should be 0.0\n";
+                    }
+                    laplace_triplet_18neighbor.push_back(MyTriplet(k, outIndex, -1.0));
+                }
+            }
+        }
+        laplace_triplet_18neighbor.push_back(MyTriplet(k, k, degree));
+    }
+    mLaplaceMatrix_18neighbor.setFromTriplets(laplace_triplet_18neighbor.begin(), laplace_triplet_18neighbor.end());
+    */
+
+    /*
     /////////////// use least square ///////////////////
     triplet_with_constraint.reserve(7*voxelNum + mAnchors.size());
     triplet_with_constraint = laplace_triplet_list;
     /////////////////////////////////////////
+    */
     mLaplaceMatrix.setFromTriplets(laplace_triplet_list.begin(), laplace_triplet_list.end());
     // constraint part
     if (anchorNum > 0)
@@ -225,6 +267,7 @@ void VolumeObject::construct_laplace_matrix()
     {
         voxelKDTree.query(a.data(), 1, &outIndex, &outDistance);
         constraint_index_(k) = outIndex;
+        //std::cout << "anchor "<<k<< " index is "<<outIndex<<std::endl;
         ++k;
     }
 }		/* -----  end of function construct_laplace_matrix  ----- */
@@ -286,6 +329,7 @@ void VolumeObject::calc_vector_field()
     SpMat Aeq;
     VectorXr Beq;
     igl::min_quad_with_fixed_precompute(mLaplaceMatrix, constraint_index_, Aeq, true, mqwf);
+    //igl::min_quad_with_fixed_precompute(mLaplaceMatrix_18neighbor, constraint_index_, Aeq, true, mqwf);
     VectorXr D;
     // solve equation with constraint
     for(int i=0; i < num_row; ++i)

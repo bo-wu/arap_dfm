@@ -29,9 +29,11 @@
  */
 void EMD::construct_correspondence(const VolumeObject &s, const VolumeObject &t)
 {
- //   min_cost_flow(s, t);
+    /*  
     direct_correspondence(s, t);
-    //find_correspondence(s, t);
+    */
+    min_cost_flow(s, t);
+    find_correspondence(s, t);
 }		/* -----  end of function construct_correspondence  ----- */
 
 

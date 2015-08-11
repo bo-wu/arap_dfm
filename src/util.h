@@ -16,6 +16,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <vector>
 #include "def_types.h"
 
 void matrix_to_point_cloud_file(const MatrixXr &points, std::string name)
