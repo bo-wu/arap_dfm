@@ -34,7 +34,7 @@ void EMD::construct_correspondence(const VolumeObject &s, const VolumeObject &t)
     /*  
     direct_correspondence(s, t);
     */
-    //min_cost_flow(s, t);
+    //min_cost_flow(s, t); // something wrong
     network_simplex(s, t);
     find_correspondence(s, t);
 }		/* -----  end of function construct_correspondence  ----- */
@@ -61,6 +61,7 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t)
     {
         for(SpMat::InnerIterator it(flow_matrix_, i); it; ++it)
         {
+            /*  
             if (max_each_row(it.row()) < it.value())
             {
                 max_each_row(it.row()) = it.value();
@@ -72,13 +73,13 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t)
                 max_each_col(it.col()) = it.value();
                 index_each_col(it.col()) = it.row();
             }
-            /*  
-            corresp_source_target_.row(it.row()) += it.value() * t.mVoxelPosition.row(it.col());
-            corresp_target_source_.row(it.col()) += it.value() * s.mVoxelPosition.row(it.row());
             */
+            corresp_source_target_.row(it.row()) +=  it.value() * t.mVoxelPosition.row(it.col());
+            corresp_target_source_.row(it.col()) +=  it.value() * s.mVoxelPosition.row(it.row());
         }
     }
 
+    /*
     for(int i=0; i < s.voxel_num_; ++i)
     {
         corresp_source_target_.row(i) = t.mVoxelPosition.row(index_each_row(i));
@@ -88,10 +89,11 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t)
     {
         corresp_target_source_.row(i) = s.mVoxelPosition.row(index_each_col(i));
     }
+    */
 
-    /*  
     corresp_source_target_ *= s.voxel_num_;
     corresp_target_source_ *= t.voxel_num_;
+    /*  
     */
 
     /* //for debug
@@ -283,9 +285,9 @@ void EMD::network_simplex (const VolumeObject &source, const VolumeObject &targe
 
     for(lemon::ListDigraph::ArcIt s(g); s != lemon::INVALID; ++s)
     {
-        if(flow[s] > 1e-8)
+        if(flow[s] > 10)
         {
-            flow_triplet.push_back(MyTriplet(g.id(g.source(s)), g.id(g.target(s)) - source.voxel_num_, flow[s]));
+            flow_triplet.push_back(MyTriplet(g.id(g.source(s)), g.id(g.target(s)) - source.voxel_num_, flow[s]/(Real)(source.voxel_num_*target.voxel_num_) ));
         }
         else if(flow[s] < 0)
         {
@@ -296,3 +298,4 @@ void EMD::network_simplex (const VolumeObject &source, const VolumeObject &targe
     flow_matrix_.setFromTriplets(flow_triplet.begin(), flow_triplet.end());
 
 }		/* -----  end of function network_simplex  ----- */
+

@@ -43,7 +43,7 @@ int main(int argc, char** argv)
 
     Morph morph(argv[1], argv[2], corresp_pairs, 0.02);
     morph.initial();
-//    morph.start_morph(0.25);
+//    morph.start_morph(0.1);
 //    morph.write_sequence();
     
 /*
