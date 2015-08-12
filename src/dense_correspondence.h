@@ -23,9 +23,14 @@ public:
     EMD() {}
     
     void construct_correspondence(const VolumeObject &s, const VolumeObject &t);
+
+    //reject bad flow points
+    //
     //correspondence from source voxel point to target (some point)
+    MatrixX3r source_control_points_;
     MatrixX3r corresp_source_target_;
     //correspondence from target voxel point to source (some point)
+    MatrixX3r target_control_points_;
     MatrixX3r corresp_target_source_;
 //private:
     SpMat flow_matrix_;

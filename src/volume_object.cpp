@@ -32,17 +32,19 @@ VolumeObject::VolumeObject(Real transform_scale) : transform_scale_(transform_sc
 {
 }
 
-VolumeObject::VolumeObject(std::string name, Real transform_scale)
+VolumeObject::VolumeObject(std::string name, Real transform_scale, Real dense_transform_scale)
 {
 	mesh_name = name;
     transform_scale_ = transform_scale;
+    dense_transform_scale_ = dense_transform_scale;
 	initial_volume();
 }
 
-void VolumeObject::initial(std::string name, Real transform_scale)
+void VolumeObject::initial(std::string name, Real transform_scale, Real dense_transform_scale)
 {
     mesh_name = name;
     transform_scale_ = transform_scale;
+    dense_transform_scale_ = dense_transform_scale;
     initial_volume();
 }
 
@@ -70,6 +72,24 @@ void VolumeObject::initial_volume()
     //std::cout<<"after subdivide " << grid->tree().activeTileCount()<<std::endl;
     voxel_num_ = interior_grid->tree().activeVoxelCount();
 } //end of initial_volume
+
+
+///generate dense voxel grid from mesh
+// should call initial volume first
+void VolumeObject::initial_dense_volume()
+{
+    dense_grid = openvdb::FloatGrid::create(2.0);
+    openvdb::math::Transform::Ptr grid_transform = openvdb::math::Transform::createLinearTransform(transform_scale_);
+    dense_grid->setTransform(grid_transform);
+    dense_grid->setGridClass(openvdb::GRID_LEVEL_SET);
+    dense_grid->setName("dense_grid");
+    dense_grid = openvdb::tools::meshToLevelSet<openvdb::FloatGrid>(dense_grid->transform(), points, triangles, float(openvdb::LEVEL_SET_HALF_WIDTH));
+
+    interior_dense_grid = openvdb::tools::sdfInteriorMask(*dense_grid);
+    interior_grid->tree().voxelizeActiveTiles();
+    dense_voxel_num_ = interior_dense_grid->tree().activeVoxelCount();
+}
+
 
 
 void VolumeObject::test_volume()
@@ -127,7 +147,7 @@ void VolumeObject::construct_laplace_matrix()
     auto voxelNum = interior_grid->tree().activeLeafVoxelCount();
     auto anchorNum = mAnchors.size();
     mLaplaceMatrix = SpMat(voxelNum, voxelNum);
-    mLaplaceMatrix_18neighbor = SpMat(voxelNum, voxelNum);
+    //mLaplaceMatrix_18neighbor = SpMat(voxelNum, voxelNum);
     mVoxelPosition = MatrixX3r::Zero(voxelNum, 3);
     distance_vector_field = MatrixXr::Zero(voxelNum, anchorNum);
     int k = 0;
@@ -188,7 +208,7 @@ void VolumeObject::construct_laplace_matrix()
                     auto voxel_pos = grid->indexToWorld(temp_coord);
                     v_world_pos<< voxel_pos[0], voxel_pos[1], voxel_pos[2];
                     voxelKDTree.query(v_world_pos.data(), 1, &outIndex, &outDistance);
-                    if(outDistance > 1.0e-5)
+                    if(outDistance > 1.0e-8)
                     {
                         std::cerr<<"Distance "<<outDistance<<" should be 0.0\n";
                     }

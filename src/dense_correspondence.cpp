@@ -61,7 +61,6 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t)
     {
         for(SpMat::InnerIterator it(flow_matrix_, i); it; ++it)
         {
-            /*  
             if (max_each_row(it.row()) < it.value())
             {
                 max_each_row(it.row()) = it.value();
@@ -73,13 +72,13 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t)
                 max_each_col(it.col()) = it.value();
                 index_each_col(it.col()) = it.row();
             }
-            */
+            /*  
             corresp_source_target_.row(it.row()) +=  it.value() * t.mVoxelPosition.row(it.col());
             corresp_target_source_.row(it.col()) +=  it.value() * s.mVoxelPosition.row(it.row());
+            */
         }
     }
 
-    /*
     for(int i=0; i < s.voxel_num_; ++i)
     {
         corresp_source_target_.row(i) = t.mVoxelPosition.row(index_each_row(i));
@@ -89,10 +88,11 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t)
     {
         corresp_target_source_.row(i) = s.mVoxelPosition.row(index_each_col(i));
     }
-    */
 
+    /*
     corresp_source_target_ *= s.voxel_num_;
     corresp_target_source_ *= t.voxel_num_;
+    */
     /*  
     */
 
