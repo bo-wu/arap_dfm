@@ -62,23 +62,34 @@ int main(int argc, char** argv)
     corresp_pairs.push_back(std::make_pair(Vector3r(0.0142926, -0.413487, 0.225126), Vector3r(0.0763945, -0.378731, 0.13358)));
     corresp_pairs.push_back(std::make_pair(Vector3r(-0.185868, -0.405328, -0.336726), Vector3r(-0.0713341, -0.41537, -0.203423)));
     corresp_pairs.push_back(std::make_pair(Vector3r(0.0238738, -0.411759, -0.449048), Vector3r(0.0535133, -0.462253, -0.397268)));
+
     //leg middle
     corresp_pairs.push_back(std::make_pair(Vector3r(-0.152678, -0.172809, 0.144243), Vector3r(-0.0673469, -0.218646, 0.160231)));
     corresp_pairs.push_back(std::make_pair(Vector3r(0.000314611, -0.17719, 0.188939), Vector3r(0.0817346, -0.187616, 0.311013)));
     corresp_pairs.push_back(std::make_pair(Vector3r(-0.186793, -0.161489, -0.298735), Vector3r(-0.0625119, -0.192748, -0.292893)));
     corresp_pairs.push_back(std::make_pair(Vector3r(0.026597, -0.151722, -0.39207), Vector3r(0.0677306, -0.211979, -0.335093)));
-
+    /*  
+    */
 
     // back, stamock, ass
     corresp_pairs.push_back(std::make_pair(Vector3r(-0.0524261, 0.168286, 0.0228699), Vector3r(0.0168113, 0.182663, 0.012828)));
     corresp_pairs.push_back(std::make_pair(Vector3r(-0.0647473, -0.0800051, -0.121843), Vector3r(-0.0242501, -0.0622054, -0.161122)));
     corresp_pairs.push_back(std::make_pair(Vector3r(-0.0945625, 0.206458, -0.266852), Vector3r(0.0225166, 0.19435, -0.295222)));
     
+    //add more
+    corresp_pairs.push_back(std::make_pair(Vector3r(0.102749, 0.330877, 0.478054), Vector3r(0.00921562, 0.317166, 0.455772) ));
+    corresp_pairs.push_back(std::make_pair(Vector3r(-0.0704841, 0.315592, 0.326745), Vector3r(-0.0447178, 0.290637, 0.223806) ));
+    corresp_pairs.push_back(std::make_pair(Vector3r(-0.00275331, 0.247703, 0.224989), Vector3r(0.0524599, 0.228578, 0.209167) ));
+    corresp_pairs.push_back(std::make_pair(Vector3r(-0.176413, 0.100594, 0.10104), Vector3r(-0.106725, 0.0655375, 0.087544) ));
+    corresp_pairs.push_back(std::make_pair(Vector3r(0.0453223, 0.0778717, 0.108341), Vector3r(0.10694, 0.083009, 0.0840618) ));
+    corresp_pairs.push_back(std::make_pair(Vector3r(-0.0699809, 0.031054, 0.248777), Vector3r(0.0057666, 0.023618, 0.277606) ));
+    /*
+    */
 
     Morph morph(argv[1], argv[2], corresp_pairs, 0.02);
     morph.initial();
-//    morph.start_morph(0.1);
-//    morph.write_sequence();
+    morph.start_morph(0.1);
+    morph.write_sequence();
     
 /*
     Real voxel_size = 0.02;

@@ -12,7 +12,6 @@
  * =====================================================================================
  */
 #include <cmath>
-#include <cassert>
 #include <iostream>
 #include <fstream>
 #include <ctime>
@@ -42,8 +41,17 @@ inline Real ThinPlateSpline::kernel(Real r)
 //void ThinPlateSpline<Real>::compute_tps(MatrixX3r &control_points, MatrixX3r &expected_positions)
 void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX3r &expected_positions)
 {
-    assert( control_points.rows() > 3 );
-    assert( control_points.rows() == expected_positions.rows() );
+    if(control_points.rows() <= 3 )
+    {
+        std::cerr << "3D TSP needs more than 3 points\n";
+        exit(-1);
+    }
+    if(control_points.rows() != expected_positions.rows())
+    {
+        std::cout << "control points and expected value not match\n";
+        exit(-1);
+    }
+
     mControlPoints = control_points;
 
     auto v_num = control_points.rows();

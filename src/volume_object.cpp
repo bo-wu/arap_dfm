@@ -15,7 +15,6 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
-#include <cassert>
 #include <ctime>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -404,7 +403,11 @@ void VolumeObject::polar_decompose(const Matrix3r &rest, const Matrix3r &deform,
  */
 void VolumeObject::calc_tetrahedron_transform(const MatrixX3r &final_corresp_points)
 {
-    assert( mDenseVoxelPosition.rows() == final_corresp_points.rows() );
+    if(mDenseVoxelPosition.rows() != final_corresp_points.rows())
+    {
+        std::cerr << "input points num wrong for tetrahedron transformation\n";
+        exit(-1);
+    }
     Matrix3r R, S, rest, deform;
     for(int i=0; i < mTetIndex.size(); ++i)
     {

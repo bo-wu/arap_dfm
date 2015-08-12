@@ -46,13 +46,11 @@ void EMD::construct_correspondence(const VolumeObject &s, const VolumeObject &t)
  *  Description:  find the correspondence between source and target
  * =====================================================================================
  */
-void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t)
+void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t, const Real threshold)
 {
-    corresp_source_target_ = MatrixX3r::Zero(s.voxel_num_, 3);
-    corresp_target_source_ = MatrixX3r::Zero(t.voxel_num_, 3);
-    VectorXi index_each_row = VectorXi::Ones(s.voxel_num_); //store max value col index
+    VectorXi index_each_row = VectorXi::Ones(s.voxel_num_); //store col index with max value 
     VectorXr max_each_row = VectorXr::Zero(s.voxel_num_);
-    VectorXi index_each_col = VectorXi::Ones(t.voxel_num_); //store max vlaue row index
+    VectorXi index_each_col = VectorXi::Ones(t.voxel_num_); //store row index with max vlaue 
     VectorXr max_each_col = VectorXr::Zero(t.voxel_num_);
     index_each_row *= -1;
     index_each_col *= -1;
@@ -79,15 +77,56 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t)
         }
     }
 
+    //filter out bad flow
+    std::vector<int> source_control, corresp_s_t;
+    std::vector<int> target_control, corresp_t_s;
+    source_control.reserve(s.voxel_num_);
+    corresp_s_t.reserve(s.voxel_num_);
+    target_control.reserve(t.voxel_num_);
+    corresp_t_s.reserve(t.voxel_num_);
+
+    VectorXr dist_vector_diff(s.mAnchors.size());
+    Real real_threshold = threshold * s.mAnchors.size();
+
     for(int i=0; i < s.voxel_num_; ++i)
     {
-        corresp_source_target_.row(i) = t.mVoxelPosition.row(index_each_row(i));
+        dist_vector_diff = s.distance_vector_field.row(i) - t.distance_vector_field.row(index_each_row(i));
+        if(dist_vector_diff.squaredNorm() < real_threshold)
+        {
+            source_control.push_back(i);
+            corresp_s_t.push_back(index_each_row(i));
+        }
     }
 
     for(int i=0; i < t.voxel_num_; ++i)
     {
-        corresp_target_source_.row(i) = s.mVoxelPosition.row(index_each_col(i));
+        dist_vector_diff = t.distance_vector_field.row(i) - s.distance_vector_field.row(index_each_col(i));
+        if(dist_vector_diff.squaredNorm() < real_threshold)
+        {
+            target_control.push_back(i);
+            corresp_t_s.push_back(index_each_col(i));
+        }
     }
+
+    source_control_points_ = MatrixX3r(source_control.size(), 3);
+    corresp_source_target_ = MatrixX3r(source_control.size(), 3);
+    for(int i=0; i < source_control.size(); ++i)
+    {
+        source_control_points_.row(i) = s.mVoxelPosition.row(source_control[i]);
+        corresp_source_target_.row(i) = t.mVoxelPosition.row(corresp_s_t[i]);
+    }
+    
+    target_control_points_ = MatrixX3r(target_control.size(), 3);
+    corresp_target_source_ = MatrixX3r(target_control.size(), 3);
+    for(int i=0; i < target_control.size(); ++i)
+    {
+        target_control_points_.row(i) = t.mVoxelPosition.row(target_control[i]);
+        corresp_target_source_.row(i) = s.mVoxelPosition.row(corresp_t_s[i]);
+    }
+
+
+    std::cout << "source control point num " << source_control.size()<<std::endl;
+    std::cout << "target control point num " << target_control.size()<<std::endl;
 
     /*
     corresp_source_target_ *= s.voxel_num_;
@@ -96,6 +135,24 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t)
     /*  
     */
 
+    std::ofstream output_source_control_index("source_control_index.dat");
+    std::ofstream output_source_control_target_index("source_control_target_index.dat");
+    for(int i=0; i < source_control.size(); ++i)
+    {
+        output_source_control_index << source_control[i]<<std::endl;
+        output_source_control_target_index << corresp_s_t[i]<<std::endl;
+    }
+    output_source_control_index.close();
+    output_source_control_target_index.close();
+    std::ofstream output_target_control_index("target_control_index.dat");
+    std::ofstream output_target_control_source_index("target_control_source_index.dat");
+    for(int i=0; i < target_control.size(); ++i)
+    {
+        output_target_control_index << target_control[i] <<std::endl;
+        output_source_control_target_index << corresp_t_s[i] <<std::endl;
+    }
+    output_target_control_index.close();
+    output_target_control_source_index.close();
     /* //for debug
     std::ofstream output_st("corresp_st.dat");
     output_st << corresp_source_target_;

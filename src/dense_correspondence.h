@@ -34,7 +34,7 @@ public:
     MatrixX3r corresp_target_source_;
 //private:
     SpMat flow_matrix_;
-    void find_correspondence(const VolumeObject &s, const VolumeObject &t);
+    void find_correspondence(const VolumeObject &s, const VolumeObject &t, const Real threshold=0.001); // threshold *= anchor_num
     void min_cost_flow(const VolumeObject &s, const VolumeObject &t);
     void direct_correspondence(const VolumeObject &s, const VolumeObject &t);
     void network_simplex(const VolumeObject &s, const VolumeObject &t);

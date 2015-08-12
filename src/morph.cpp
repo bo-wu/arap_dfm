@@ -59,7 +59,7 @@ Morph::~Morph()
  */
 void Morph::initial()
 {
-    std::cout <<"initialize morphing process, it will take minutes ... "<<std::flush;
+    std::cout <<"initialize morphing process, it will take minutes ... "<<std::endl;
 
     std::clock_t start;
     Real elapse;
@@ -78,7 +78,7 @@ void Morph::initial()
 
     ThinPlateSpline source_target_tps, target_source_tps;
     
-    source_target_tps.compute_tps(source_volume_.mVoxelPosition, emd_flow.corresp_source_target_);
+    source_target_tps.compute_tps(emd_flow.source_control_points_, emd_flow.corresp_source_target_);
     source_target_tps.interpolate(source_volume_.mDenseVoxelPosition, corresp_S_T_);
     source_volume_.calc_tetrahedron_transform(corresp_S_T_);
     
@@ -107,7 +107,7 @@ void Morph::initial()
     output_source_corresp.close();
     */
 
-    target_source_tps.compute_tps(target_volume_.mVoxelPosition, emd_flow.corresp_target_source_);
+    target_source_tps.compute_tps(emd_flow.target_control_points_, emd_flow.corresp_target_source_);
     target_source_tps.interpolate(target_volume_.mDenseVoxelPosition, corresp_T_S_);
     target_volume_.calc_tetrahedron_transform(corresp_T_S_);
 
@@ -203,7 +203,7 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     std::cout<<"source ";
     source_volume_.find_intermedium_points(source_intermedium, t);
 
-    std::string source_inter_name = "source_intermedium" + std::to_string(int(10*t));
+    std::string source_inter_name = "./output_data/source_intermedium" + std::to_string(int(10*t));
     matrix_to_point_cloud_file(source_intermedium, source_inter_name);
 
     /*  
@@ -225,7 +225,7 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     target_volume_.find_intermedium_points(target_intermedium, 1-t);
     std::cout<<"backwards to target ";
 
-    std::string target_inter_name = "target_intermedium" + std::to_string(int(10*t));
+    std::string target_inter_name = "./output_data/target_intermedium" + std::to_string(int(10*t));
     matrix_to_point_cloud_file(target_intermedium, target_inter_name);
 
     /*  
