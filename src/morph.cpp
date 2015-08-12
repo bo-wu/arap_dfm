@@ -42,6 +42,8 @@ Morph::Morph(std::string source_mesh_name, std::string target_mesh_name, Corresp
         source_volume_.mAnchors.push_back(corresp_pairs_[i].first);
         target_volume_.mAnchors.push_back(corresp_pairs_[i].second);
     }
+    std::cout << "source voxel num "<< source_volume_.voxel_num_<<std::endl;
+    std::cout << "target voxel num "<< target_volume_.voxel_num_<<std::endl;
 }
 
 Morph::~Morph()

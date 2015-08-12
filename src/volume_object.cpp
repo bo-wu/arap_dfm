@@ -68,6 +68,7 @@ void VolumeObject::initial_volume()
     //make inside grid dense
     interior_grid->tree().voxelizeActiveTiles();
     //std::cout<<"after subdivide " << grid->tree().activeTileCount()<<std::endl;
+    voxel_num_ = interior_grid->tree().activeVoxelCount();
 } //end of initial_volume
 
 
@@ -124,7 +125,6 @@ void VolumeObject::construct_laplace_matrix()
 {
     //for sparse grid, should be activeVoxel + activeTile
     auto voxelNum = interior_grid->tree().activeLeafVoxelCount();
-    voxel_num_ = voxelNum;
     auto anchorNum = mAnchors.size();
     mLaplaceMatrix = SpMat(voxelNum, voxelNum);
     mLaplaceMatrix_18neighbor = SpMat(voxelNum, voxelNum);
