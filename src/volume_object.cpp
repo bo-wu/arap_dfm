@@ -220,6 +220,7 @@ void VolumeObject::construct_laplace_matrix()
                 neighbor_index_3d.push_back(neighbor_index_1d);
             }
         }
+        
         laplace_triplet_list.push_back(MyTriplet(k, k, degree));
 
         // construct tetrahedron

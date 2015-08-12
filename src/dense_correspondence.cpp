@@ -54,6 +54,9 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t, cons
     VectorXr max_each_col = VectorXr::Zero(t.voxel_num_);
     index_each_row *= -1;
     index_each_col *= -1;
+    //store average coordinates
+    MatrixX3r average_source_target = MatrixX3r::Zero(s.voxel_num_, 3);
+    MatrixX3r average_target_source = MatrixX3r::Zero(t.voxel_num_, 3);
 
     for(int i=0; i < flow_matrix_.outerSize(); ++i)
     {
@@ -74,6 +77,8 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t, cons
             corresp_source_target_.row(it.row()) +=  it.value() * t.mVoxelPosition.row(it.col());
             corresp_target_source_.row(it.col()) +=  it.value() * s.mVoxelPosition.row(it.row());
             */
+            average_source_target.row(it.row()) +=  it.value() * t.mVoxelPosition.row(it.col());
+            average_target_source.row(it.col()) +=  it.value() * s.mVoxelPosition.row(it.row());
         }
     }
 
@@ -113,7 +118,10 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t, cons
     for(int i=0; i < source_control.size(); ++i)
     {
         source_control_points_.row(i) = s.mVoxelPosition.row(source_control[i]);
-        corresp_source_target_.row(i) = t.mVoxelPosition.row(corresp_s_t[i]);
+        //the max voxel
+        //corresp_source_target_.row(i) = t.mVoxelPosition.row(corresp_s_t[i]);
+        //average voxel
+        corresp_source_target_.row(i) = average_source_target.row(source_control[i]);
     }
     
     target_control_points_ = MatrixX3r(target_control.size(), 3);
@@ -121,19 +129,21 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t, cons
     for(int i=0; i < target_control.size(); ++i)
     {
         target_control_points_.row(i) = t.mVoxelPosition.row(target_control[i]);
-        corresp_target_source_.row(i) = s.mVoxelPosition.row(corresp_t_s[i]);
+        //the max voxel
+        //corresp_target_source_.row(i) = s.mVoxelPosition.row(corresp_t_s[i]);
+        //average voxel
+        corresp_target_source_.row(i) = average_target_source.row(target_control[i]);
     }
 
+    // scale for it.value()
+    corresp_source_target_ *= s.voxel_num_;
+    corresp_target_source_ *= t.voxel_num_;
+    /*
+    */
 
     std::cout << "source control point num " << source_control.size()<<std::endl;
     std::cout << "target control point num " << target_control.size()<<std::endl;
 
-    /*
-    corresp_source_target_ *= s.voxel_num_;
-    corresp_target_source_ *= t.voxel_num_;
-    */
-    /*  
-    */
 
     std::ofstream output_source_control_index("source_control_index.dat");
     std::ofstream output_source_control_target_index("source_control_target_index.dat");
@@ -153,6 +163,9 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t, cons
     }
     output_target_control_index.close();
     output_target_control_source_index.close();
+    /*  
+    */
+
     /* //for debug
     std::ofstream output_st("corresp_st.dat");
     output_st << corresp_source_target_;
