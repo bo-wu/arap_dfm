@@ -32,12 +32,12 @@ target_corresp = np.loadtxt(data_path + "target_corresp.dat")
 
 #mmlab.figure(figure='vis', bgcolor=(1.0,1.0,1.0), size=(800,600))
 mmlab.figure(figure='vis', size=(1600,900))
-mmlab.points3d(  source_voxel[:,0]-0.5,   source_voxel[:,1],   source_voxel[:,2],     source_dist[:,               int(sys.argv[1])], colormap='jet', scale_mode='none', scale_factor=0.015, opacity=1.0, mode='cube')
-mmlab.points3d(source_corresp[:,0]+1.5, source_corresp[:,1], source_corresp[:,2],     source_dist[:,               int(sys.argv[1])], colormap='jet', scale_mode='none', scale_factor=0.015, opacity=1.0, mode='cube')
-mmlab.points3d(    source_emd[:,0]+0.5,     source_emd[:,1],     source_emd[:,2],     source_dist[source_emd_index,int(sys.argv[1])], colormap='jet', scale_mode='none', scale_factor=0.015, opacity=1.0, mode='cube')
-mmlab.points3d(  target_voxel[:,0]-0.5,   target_voxel[:,1],   target_voxel[:,2]+1.0, target_dist[:,               int(sys.argv[1])], colormap='jet', scale_mode='none', scale_factor=0.015, opacity=1.0, mode='cube')
-mmlab.points3d(target_corresp[:,0]+1.5, target_corresp[:,1], target_corresp[:,2]+1.0, target_dist[:,               int(sys.argv[1])], colormap='jet', scale_mode='none', scale_factor=0.015, opacity=1.0, mode='cube')
-mmlab.points3d(    target_emd[:,0]+0.5,     target_emd[:,1],     target_emd[:,2]+1.0, target_dist[target_emd_index,int(sys.argv[1])], colormap='jet', scale_mode='none', scale_factor=0.015, opacity=1.0, mode='cube')
+mmlab.points3d(  source_voxel[:,0]-0.5,   source_voxel[:,1],   source_voxel[:,2],     source_voxel[:,               int(sys.argv[1])], colormap='jet', scale_mode='none', scale_factor=0.015, opacity=1.0, mode='cube')
+mmlab.points3d(source_corresp[:,0]+1.5, source_corresp[:,1], source_corresp[:,2],     source_voxel[:,               int(sys.argv[1])], colormap='jet', scale_mode='none', scale_factor=0.015, opacity=1.0, mode='cube')
+mmlab.points3d(    source_emd[:,0]+0.5,     source_emd[:,1],     source_emd[:,2],     source_voxel[source_emd_index,int(sys.argv[1])], colormap='jet', scale_mode='none', scale_factor=0.015, opacity=1.0, mode='cube')
+mmlab.points3d(  target_voxel[:,0]-0.5,   target_voxel[:,1],   target_voxel[:,2]+1.0, target_voxel[:,               int(sys.argv[1])], colormap='jet', scale_mode='none', scale_factor=0.015, opacity=1.0, mode='cube')
+mmlab.points3d(target_corresp[:,0]+1.5, target_corresp[:,1], target_corresp[:,2]+1.0, target_voxel[:,               int(sys.argv[1])], colormap='jet', scale_mode='none', scale_factor=0.015, opacity=1.0, mode='cube')
+mmlab.points3d(    target_emd[:,0]+0.5,     target_emd[:,1],     target_emd[:,2]+1.0, target_voxel[target_emd_index,int(sys.argv[1])], colormap='jet', scale_mode='none', scale_factor=0.015, opacity=1.0, mode='cube')
 mmlab.show()
 
 

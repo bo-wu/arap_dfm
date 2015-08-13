@@ -200,7 +200,7 @@ void VolumeObject::construct_laplace_matrix()
             for(int j=-1; j <= 1; j+=2)
             {
                 auto temp_coord = v_coord;
-                temp_coord[i] = v_coord[i] + 1*j;
+                temp_coord[i] = v_coord[i] + j;
                 if (interior_grid->tree().isValueOn(temp_coord))
                 {
                     ++degree;
@@ -432,17 +432,17 @@ void VolumeObject::calc_tetrahedron_transform(const MatrixX3r &final_corresp_poi
  */
 void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, const Real t)
 {
-    int anchor_num = 1;
+    int fixed_num = 1;
     int dense_voxel_num = mDenseVoxelPosition.rows();
     int tet_num = mTetIndex.size();
 
     // with one anchor point
-    SpMat L(3*tet_num+anchor_num, dense_voxel_num);
-    MatrixX3r B = MatrixX3r::Zero(3*tet_num+anchor_num, 3);
+    SpMat L(3*tet_num+fixed_num, dense_voxel_num);
+    MatrixX3r B = MatrixX3r::Zero(3*tet_num+fixed_num, 3);
     inter_corresp_points = MatrixX3r::Zero(dense_voxel_num, 3);
 
     std::vector<MyTriplet> tet_triplet_list;
-    tet_triplet_list.reserve(6*tet_num+anchor_num);
+    tet_triplet_list.reserve(6*tet_num+fixed_num);
 
 //    std::ofstream output_transform("transform.dat");
     // construct L and B
@@ -488,7 +488,7 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
 
     /*  
     std::cout <<"mass center voxel index " << mass_center_voxel_index<<std::endl;
-    std::cout<<"tet_triplet_list.size "<<tet_triplet_list.size()<<" reserve size " << 6*tet_num+anchor_num<<std::endl;
+    std::cout<<"tet_triplet_list.size "<<tet_triplet_list.size()<<" reserve size " << 6*tet_num+fixed_num<<std::endl;
     */
 
     /*
