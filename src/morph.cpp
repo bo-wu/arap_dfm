@@ -73,6 +73,13 @@ void Morph::initial()
     source_volume_.calc_vector_field();  
     target_volume_.calc_vector_field();
 
+    std::ofstream output_source_dist("source_dist.dat");
+    output_source_dist << source_volume_.distance_vector_field;
+    output_source_dist.close();
+    std::ofstream output_target_dist("target_dist.dat");
+    output_target_dist << target_volume_.distance_vector_field;
+    output_target_dist.close();
+
     EMD emd_flow;
     emd_flow.construct_correspondence(source_volume_, target_volume_);
 
@@ -86,13 +93,6 @@ void Morph::initial()
     matrix_to_point_cloud_file(emd_flow.corresp_target_source_, "target_emd");
     matrix_to_point_cloud_file(source_volume_.mDenseVoxelPosition, "source_voxel");
     matrix_to_point_cloud_file(target_volume_.mDenseVoxelPosition, "target_voxel");
-
-    std::ofstream output_source_dist("source_dist.dat");
-    output_source_dist << source_volume_.distance_vector_field;
-    output_source_dist.close();
-    std::ofstream output_target_dist("target_dist.dat");
-    output_target_dist << target_volume_.distance_vector_field;
-    output_target_dist.close();
 
     /*  
     std::ofstream output_source_emd("source_emd.dat");
@@ -140,7 +140,6 @@ void Morph::initial()
  */
 void Morph::start_morph (Real step_size)
 {
-    openvdb::Coord xyz;
     int dim =  0.5 * 1.2 / voxel_size_;
     MatrixX3r grid_vertex(8*dim*dim*dim, 3);
 
@@ -148,6 +147,8 @@ void Morph::start_morph (Real step_size)
 
     openvdb::FloatGrid::Ptr temp_grid = openvdb::FloatGrid::create(2.0);
     temp_grid->setTransform(grid_transform);
+
+    openvdb::Coord xyz;
 
     for(int i=-dim; i < dim; ++i)
         for(int j=-dim; j < dim; ++j)
