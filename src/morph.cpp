@@ -203,7 +203,7 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     std::cout<<"source ";
     source_volume_.find_intermedium_points(source_intermedium, t);
 
-    std::string source_inter_name = "./output_data/source_intermedium" + std::to_string(int(10*t));
+    std::string source_inter_name = "./output_result_data/source_intermedium" + std::to_string(int(10*t));
     matrix_to_point_cloud_file(source_intermedium, source_inter_name);
 
     /*  
@@ -225,7 +225,7 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     target_volume_.find_intermedium_points(target_intermedium, 1-t);
     std::cout<<"backwards to target ";
 
-    std::string target_inter_name = "./output_data/target_intermedium" + std::to_string(int(10*t));
+    std::string target_inter_name = "./output_result_data/target_intermedium" + std::to_string(int(10*t));
     matrix_to_point_cloud_file(target_intermedium, target_inter_name);
 
     /*  
