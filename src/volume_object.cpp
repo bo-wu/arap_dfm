@@ -375,6 +375,9 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
     B.row(3*tet_num) = weight * mass_center;
     L.setFromTriplets(tet_triplet_list.begin(), tet_triplet_list.end());
 
+    std::cout <<"L shape " << 3*tet_num+fixed_num <<", "<<dense_voxel_num<<std::endl;
+
+
     Eigen::ConjugateGradient<SpMat> cg;
     SpMat L_normal = L.transpose() * L;
     cg.compute(L_normal);
@@ -400,6 +403,24 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
     /*  
     std::cout <<"mass center voxel index " << mass_center_voxel_index<<std::endl;
     std::cout<<"tet_triplet_list.size "<<tet_triplet_list.size()<<" reserve size " << 6*tet_num+fixed_num<<std::endl;
+    */
+    /*
+    std::ofstream output_l_row("l_row.dat");
+    std::ofstream output_l_col("l_col.dat");
+    std::ofstream output_l_value("l_value.dat");
+            output_l_row << 3*i+k <<" ";
+            output_l_col << mTetIndex[i](0) <<" ";
+            output_l_value << 1 <<" ";
+            output_l_row << 3*i+k <<" ";
+            output_l_col << mTetIndex[i](k+1) <<" ";
+            output_l_value << -1 <<" ";
+    //output_l_row << 3*tet_num;
+    //output_l_col << mass_center_voxel_index;
+    //output_l_value << weight;
+
+    output_l_row.close();
+    output_l_col.close();
+    output_l_value.close();
     */
 
     /*
