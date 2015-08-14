@@ -97,6 +97,7 @@ void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX
 
     arma::mat arma_L = arma::mat(v_num+4, v_num+4);
     arma::mat arma_B = arma::mat(v_num+4, 3);
+
 #ifdef PARALLEL_OMP_
 #pragma omp parallel for
 #endif

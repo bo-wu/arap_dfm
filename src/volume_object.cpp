@@ -90,49 +90,10 @@ void VolumeObject::initial_dense_volume()
 }
 
 
-
-void VolumeObject::test_volume()
-{
-    auto inside_grid = openvdb::tools::sdfInteriorMask(*grid);
-	std::cout<<"leaf num "<<grid->tree().leafCount()<<std::endl;
-	std::cout<<"inside leaf num "<<inside_grid->tree().leafCount()<<std::endl;
-
-	std::cout<<"       active leaf voxel "<<grid->tree().activeLeafVoxelCount()<<" inactive leaf voxel "<<grid->tree().inactiveLeafVoxelCount()<<"\n";
-	std::cout<<"inside_grid active leaf voxel "<<inside_grid->tree().activeLeafVoxelCount()<<" inactive leaf voxel "<<inside_grid->tree().inactiveLeafVoxelCount()<<"\n";
-    std::cout<<"            active tile num "<<grid->tree().activeTileCount()<<std::endl;
-    std::cout<<"inside_grid active tile num "<<inside_grid->tree().activeTileCount()<<std::endl;
-    std::ofstream output_depth("depth.txt");
-    auto accessor = grid->getAccessor();
-    for(auto iter=inside_grid->cbeginValueOn(); iter; ++iter)
-    {
-        output_depth<<iter.getVoxelCount()<<" ";
-        if(iter.isTileValue())
-            output_depth<<"tile value ";
-        if(accessor.getValue(iter.getCoord()) > 0.0)
-            output_depth<<"bigger than 0 ";
-        output_depth<< accessor.getValue(iter.getCoord())<<" coord ";
-        output_depth<< iter.getCoord()<<" world "<<grid->indexToWorld(iter.getCoord())<<std::endl;
-    }
-    output_depth.close();
-    /*  
-    inside_grid->tree().voxelizeActiveTiles();
-    std::cout<<"\nafter voxelize active tiles\n\n";
-
-	std::cout<<"leaf num "<<grid->tree().leafCount()<<std::endl;
-	std::cout<<"inside leaf num "<<inside_grid->tree().leafCount()<<std::endl;
-
-	std::cout<<"       active leaf voxel "<<grid->tree().activeLeafVoxelCount()<<" inactive leaf voxel "<<grid->tree().inactiveLeafVoxelCount()<<"\n";
-	std::cout<<"inside_grid active leaf voxel "<<inside_grid->tree().activeLeafVoxelCount()<<" inactive leaf voxel "<<inside_grid->tree().inactiveLeafVoxelCount()<<"\n";
-    std::cout<<"            active tile num "<<grid->tree().activeTileCount()<<std::endl;
-    std::cout<<"inside_grid active tile num "<<inside_grid->tree().activeTileCount()<<std::endl;
-		*/
-}
-
 void VolumeObject::set_anchors(const std::vector<Vector3r>& anchors)
 {
     mAnchors = anchors;
 }
-
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -146,10 +107,10 @@ void VolumeObject::construct_laplace_matrix()
     auto voxelNum = interior_grid->tree().activeLeafVoxelCount();
     auto anchorNum = mAnchors.size();
     mLaplaceMatrix = SpMat(voxelNum, voxelNum);
-    //mLaplaceMatrix_18neighbor = SpMat(voxelNum, voxelNum);
     mVoxelPosition = MatrixX3r::Zero(voxelNum, 3);
     distance_vector_field = MatrixXr::Zero(voxelNum, anchorNum);
     int k = 0;
+
     for(auto iter=interior_grid->cbeginValueOn(); iter; ++iter, ++k)
     {
         auto voxel_pos = grid->indexToWorld(iter.getCoord());
@@ -168,26 +129,25 @@ void VolumeObject::construct_laplace_matrix()
     voxelKDTree.index->buildIndex();
     long int outIndex;
     Real outDistance;
-    int degree;
-    openvdb::Coord v_coord;
-    Vector3r v_world_pos;
     voxelKDTree.query(mass_center.data(), 1, &outIndex, &outDistance);
-    mass_center_voxel_index = outIndex;
+
     // keep fixed
+    mass_center_voxel_index = outIndex;
     mass_center = mVoxelPosition.row(outIndex);
+
     // construct tetrahedron
     std::vector< std::vector<int> > neighbor_index_3d; //3 directions
     std::vector<int> neighbor_index_1d; // 1 direction
 
-    std::vector<MyTriplet> laplace_triplet_list;
     // 6 neighbor
+    std::vector<MyTriplet> laplace_triplet_list;
     laplace_triplet_list.reserve(7*voxelNum);
-    /*  
-    // test 18 neighbor
-    std::vector<MyTriplet> laplace_triplet_18neighbor;
-    laplace_triplet_18neighbor.reserve(19*voxelNum);
-    */
+
+    int degree;
+    Vector3r v_world_pos;
+    openvdb::Coord v_coord;
     k = 0;
+
     // laplace matrix
     for(auto iter=interior_grid->cbeginValueOn(); iter; ++iter, ++k)
     {
@@ -240,46 +200,9 @@ void VolumeObject::construct_laplace_matrix()
         }
     }
 
-    /*  
-    std::vector<Vector3i> neighbor18_index = get_neighbor18_index();
-    k = 0;
-    for(auto iter=interior_grid->cbeginValueOn(); iter; ++iter, ++k)
-    {
-        v_coord = iter.getCoord();
-        auto temp_coord = v_coord;
-        degree = 0;
-        for(int i=0; i < neighbor18_index.size(); ++i)
-        {
-            for(int j=0; j < 3; ++j)
-            {
-                temp_coord[j] = v_coord[j] + neighbor18_index[i](j);
-                if(interior_grid->tree().isValueOn(temp_coord))
-                {
-                    ++degree;
-                    auto voxel_pos = grid->indexToWorld(temp_coord);
-                    v_world_pos << voxel_pos[0], voxel_pos[1], voxel_pos[2];
-                    voxelKDTree.query(v_world_pos.data(), 1, &outIndex, &outDistance);
-                    if(outDistance > 1.0e-5)
-                    {
-                        std::cerr <<"Distance "<<outDistance<<" should be 0.0\n";
-                    }
-                    laplace_triplet_18neighbor.push_back(MyTriplet(k, outIndex, -1.0));
-                }
-            }
-        }
-        laplace_triplet_18neighbor.push_back(MyTriplet(k, k, degree));
-    }
-    mLaplaceMatrix_18neighbor.setFromTriplets(laplace_triplet_18neighbor.begin(), laplace_triplet_18neighbor.end());
-    */
-
-    /*
-    /////////////// use least square ///////////////////
-    triplet_with_constraint.reserve(7*voxelNum + mAnchors.size());
-    triplet_with_constraint = laplace_triplet_list;
-    /////////////////////////////////////////
-    */
     mLaplaceMatrix.setFromTriplets(laplace_triplet_list.begin(), laplace_triplet_list.end());
-    // constraint part
+    
+    //anchor points for harmonic field
     if (anchorNum > 0)
         constraint_index_ = VectorXi::Zero(anchorNum, 1);
     k = 0;
@@ -302,43 +225,6 @@ void VolumeObject::calc_vector_field()
 {
 //    test_volume();
     construct_laplace_matrix();
-    /*
-    std::ofstream output_laplace("laplace.dat");
-    output_laplace << mLaplaceMatrix;
-    output_laplace.close();
-    */
-    /*  
-    Real weight = 2;
-    for(int i=0; i < constraint_index_.size(); ++i)
-    {
-        triplet_with_constraint.push_back(MyTriplet(voxel_num_+i, constraint_index_(i), weight));
-    }
-    // solve use eigen directly
-    SpMat L_with_constraint(voxel_num_+mAnchors.size(), voxel_num_);
-    L_with_constraint.setFromTriplets(triplet_with_constraint.begin(), triplet_with_constraint.end());
-    Eigen::SimplicialLDLT<SpMat> solver;
-    solver.compute(L_with_constraint.transpose() * L_with_constraint);
-    if(solver.info() != Eigen::Success)
-    {
-        std::cerr <<"compute distance vector field error\n";
-        exit(-1);
-    }
-    VectorXr B_with_constraint = VectorXr::Zero(voxel_num_+mAnchors.size(), 1);
-    for(int i=0; i < constraint_index_.size(); ++i)
-    {
-        if( i > 0 )
-        {
-            B_with_constraint(voxel_num_+i-1) = 0;
-        }
-        B_with_constraint(voxel_num_+i) = weight;
-        distance_vector_field.col(i) = solver.solve(L_with_constraint.transpose() * B_with_constraint);
-        if(solver.info() != Eigen::Success)
-        {
-            std::cerr << "LDLT solver error\n";
-            exit(-1);
-        }
-    }
-    */
 
     /*   // solving use igl
     */
@@ -348,10 +234,11 @@ void VolumeObject::calc_vector_field()
     //Empyty constraints (except for constraint_index_/value)
     SpMat Aeq;
     VectorXr Beq;
+
     igl::min_quad_with_fixed_precompute(mLaplaceMatrix, constraint_index_, Aeq, true, mqwf);
-    //igl::min_quad_with_fixed_precompute(mLaplaceMatrix_18neighbor, constraint_index_, Aeq, true, mqwf);
-    VectorXr D;
+
     // solve equation with constraint
+    VectorXr D;
     for(int i=0; i < num_row; ++i)
     {
         VectorXr constraint_value = VectorXr::Zero(num_row, 1);
@@ -409,6 +296,7 @@ void VolumeObject::calc_tetrahedron_transform(const MatrixX3r &final_corresp_poi
         std::cerr << "input points num wrong for tetrahedron transformation\n";
         exit(-1);
     }
+
     Matrix3r R, S, rest, deform;
     for(int i=0; i < mTetIndex.size(); ++i)
     {
@@ -417,6 +305,7 @@ void VolumeObject::calc_tetrahedron_transform(const MatrixX3r &final_corresp_poi
             rest.col(j-1) = mDenseVoxelPosition.row( mTetIndex[i](j) ) - mDenseVoxelPosition.row(mTetIndex[i](0));
             deform.col(j-1) = final_corresp_points.row( mTetIndex[i](j) ) - final_corresp_points.row(mTetIndex[i](0));
         }
+
         polar_decompose(rest, deform, R, S);
 
         mTetTransform.push_back(std::make_pair(R, S));
@@ -444,19 +333,19 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
     std::vector<MyTriplet> tet_triplet_list;
     tet_triplet_list.reserve(6*tet_num+fixed_num);
 
+    Quaternionr quat_I, quat_res;
+    quat_I.setIdentity();
+
+    Matrix3r M;
+    Matrix3r mat_I = Matrix3r::Identity();
+    Matrix43r tet_vert;
+
 //    std::ofstream output_transform("transform.dat");
     // construct L and B
     for(int i=0; i < tet_num; i++)
     {
-        Quaternionr quat_I, quat_res;
-        quat_I.setIdentity();
-
-        Matrix3r M;
-        Matrix3r mat_I = Matrix3r::Identity();
-        Matrix43r tet_vert;
-
-        //construct B
-        Quaternionr quat(mTetTransform[i].first); // test if quad equal first
+        //================  construct B  ====================
+        Quaternionr quat(mTetTransform[i].first); // test if quat equal first
         quat_res = quat_I.slerp(t, quat);
         M = quat_res.toRotationMatrix() * ( (1-t)*mat_I + t*mTetTransform[i].second );
 
@@ -468,7 +357,7 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
         {
             tet_vert.row(j) = M * mDenseVoxelPosition.row(mTetIndex[i](j)).transpose();
         }
-        //construct L, B
+        //===============  construct L, B  ===============
         for(int k=0; k < 3; ++k)
         {
             tet_triplet_list.push_back(MyTriplet(3*i+k, mTetIndex[i](0), 1));
@@ -485,6 +374,28 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
     tet_triplet_list.push_back(MyTriplet(3*tet_num, mass_center_voxel_index, weight));
     B.row(3*tet_num) = weight * mass_center;
     L.setFromTriplets(tet_triplet_list.begin(), tet_triplet_list.end());
+
+    Eigen::ConjugateGradient<SpMat> cg;
+    SpMat L_normal = L.transpose() * L;
+    cg.compute(L_normal);
+    B = L.transpose() * B;
+
+    std::clock_t start;
+    start = std::clock();
+    for(int i=0; i < 3; ++i)
+    {
+        inter_corresp_points.col(i) = cg.solve(B.col(i));
+//        std::cout << "col("<<i<<") #iterations: " << cg.iterations()<<std::endl;
+//        std::cout << "estimated error "<<cg.error() <<std::endl;
+        if(cg.info() != Eigen::Success)
+        {
+            std::cout << "ConjugateGradient solver not converage\n";
+            exit(-1);
+        }
+    }
+    Real elapse = (std::clock() - start) / (Real)(CLOCKS_PER_SEC);
+    std::cout<<"intermedium correspondence points elapse "<<elapse<<"s\n";
+
 
     /*  
     std::cout <<"mass center voxel index " << mass_center_voxel_index<<std::endl;
@@ -520,26 +431,6 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
     output_L_row.close();
       */
 
-    Eigen::ConjugateGradient<SpMat> cg;
-    SpMat L_normal = L.transpose() * L;
-    cg.compute(L_normal);
-    B = L.transpose() * B;
-
-    std::clock_t start;
-    start = std::clock();
-    for(int i=0; i < 3; ++i)
-    {
-        inter_corresp_points.col(i) = cg.solve(B.col(i));
-//        std::cout << "col("<<i<<") #iterations: " << cg.iterations()<<std::endl;
-//        std::cout << "estimated error "<<cg.error() <<std::endl;
-        if(cg.info() != Eigen::Success)
-        {
-            std::cout << "ConjugateGradient solver not converage\n";
-            exit(-1);
-        }
-    }
-    Real elapse = (std::clock() - start) / (Real)(CLOCKS_PER_SEC);
-    std::cout<<"intermedium correspondence points elapse "<<elapse<<"s\n";
     /*  
     std::ofstream output_res("inter_points.dat");
     output_res << inter_corresp_points;
@@ -641,5 +532,44 @@ void VolumeObject::write_grid(std::string name)
 	grids.push_back(grid);
 	file.write(grids);
 	file.close();
+}
+
+
+
+void VolumeObject::test_volume()
+{
+    auto inside_grid = openvdb::tools::sdfInteriorMask(*grid);
+	std::cout<<"leaf num "<<grid->tree().leafCount()<<std::endl;
+	std::cout<<"inside leaf num "<<inside_grid->tree().leafCount()<<std::endl;
+
+	std::cout<<"       active leaf voxel "<<grid->tree().activeLeafVoxelCount()<<" inactive leaf voxel "<<grid->tree().inactiveLeafVoxelCount()<<"\n";
+	std::cout<<"inside_grid active leaf voxel "<<inside_grid->tree().activeLeafVoxelCount()<<" inactive leaf voxel "<<inside_grid->tree().inactiveLeafVoxelCount()<<"\n";
+    std::cout<<"            active tile num "<<grid->tree().activeTileCount()<<std::endl;
+    std::cout<<"inside_grid active tile num "<<inside_grid->tree().activeTileCount()<<std::endl;
+    std::ofstream output_depth("depth.txt");
+    auto accessor = grid->getAccessor();
+    for(auto iter=inside_grid->cbeginValueOn(); iter; ++iter)
+    {
+        output_depth<<iter.getVoxelCount()<<" ";
+        if(iter.isTileValue())
+            output_depth<<"tile value ";
+        if(accessor.getValue(iter.getCoord()) > 0.0)
+            output_depth<<"bigger than 0 ";
+        output_depth<< accessor.getValue(iter.getCoord())<<" coord ";
+        output_depth<< iter.getCoord()<<" world "<<grid->indexToWorld(iter.getCoord())<<std::endl;
+    }
+    output_depth.close();
+    /*  
+    inside_grid->tree().voxelizeActiveTiles();
+    std::cout<<"\nafter voxelize active tiles\n\n";
+
+	std::cout<<"leaf num "<<grid->tree().leafCount()<<std::endl;
+	std::cout<<"inside leaf num "<<inside_grid->tree().leafCount()<<std::endl;
+
+	std::cout<<"       active leaf voxel "<<grid->tree().activeLeafVoxelCount()<<" inactive leaf voxel "<<grid->tree().inactiveLeafVoxelCount()<<"\n";
+	std::cout<<"inside_grid active leaf voxel "<<inside_grid->tree().activeLeafVoxelCount()<<" inactive leaf voxel "<<inside_grid->tree().inactiveLeafVoxelCount()<<"\n";
+    std::cout<<"            active tile num "<<grid->tree().activeTileCount()<<std::endl;
+    std::cout<<"inside_grid active tile num "<<inside_grid->tree().activeTileCount()<<std::endl;
+		*/
 }
 

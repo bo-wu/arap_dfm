@@ -72,51 +72,6 @@ public:
 
     std::vector<MyTriplet> triplet_with_constraint;
 
-    std::vector<Vector3i> get_neighbor18_index()
-    {
-        std::vector<Vector3i> neighbor18_index;
-        Vector3i temp_index;
-        temp_index << 1, 0, 1;
-        neighbor18_index.push_back(temp_index);
-        temp_index << 0, 0, 1;
-        neighbor18_index.push_back(temp_index);
-        temp_index << -1, 0, 1;
-        neighbor18_index.push_back(temp_index);
-        temp_index << 0, 1, 1;
-        neighbor18_index.push_back(temp_index);
-        temp_index << 0, -1, 1;
-        neighbor18_index.push_back(temp_index);
-
-        temp_index << -1, -1, 0;
-        neighbor18_index.push_back(temp_index);
-        temp_index << -1, 0, 0;
-        neighbor18_index.push_back(temp_index);
-        temp_index << -1, 1, 0;
-        neighbor18_index.push_back(temp_index);
-        temp_index << 0, -1, 0;
-        neighbor18_index.push_back(temp_index);
-        temp_index << 0, 1, 0;
-        neighbor18_index.push_back(temp_index);
-        temp_index << 1, -1, 0;
-        neighbor18_index.push_back(temp_index);
-        temp_index << 1, 0, 0;
-        neighbor18_index.push_back(temp_index);
-        temp_index << 1, 1, 0;
-        neighbor18_index.push_back(temp_index);
-
-        temp_index << 1, 0, -1;
-        neighbor18_index.push_back(temp_index);
-        temp_index << 0, 0, -1;
-        neighbor18_index.push_back(temp_index);
-        temp_index << -1, 0, -1;
-        neighbor18_index.push_back(temp_index);
-        temp_index << 0, 1, -1;
-        neighbor18_index.push_back(temp_index);
-        temp_index << 0, -1, -1;
-        neighbor18_index.push_back(temp_index);
-        return neighbor18_index;
-    }
-
 
 };
 

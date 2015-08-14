@@ -1,5 +1,5 @@
 #! /usr/bin/env bash
-cd build
+cd build_arap
 cmake ..
 make
 cd ..

@@ -19,23 +19,14 @@
 #include <vector>
 #include "def_types.h"
 
-void matrix_to_point_cloud_file(const MatrixXr &points, std::string name)
+void matrix_to_point_cloud_file(const MatrixXr &points, std::string name);
+
+struct NeighborIndex
 {
-    std::string data_name = name + ".dat";
-    name = name + ".obj";
-    std::ofstream output_point(name.c_str());
-    int p_num = points.rows();
-
-    for(int i=0; i < p_num; ++i)
-    {
-        output_point << "v "<<points.row(i)<<std::endl;
-    }
-    output_point.close();
-
-    std::ofstream output_point_data(data_name.c_str());
-    output_point_data << points;
-    output_point_data.close();
-}
+    NeighborIndex();
+    std::vector<Vector3i> neighbor18_index;
+    std::vector<Vector3i> get_neighbor18_index();
+};
 
 #endif
 
