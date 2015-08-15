@@ -23,19 +23,20 @@
 #include "morph.h"
 #include "util.h"
 
-Morph::Morph(std::string source_mesh_name, std::string target_mesh_name, CorrespType corresp_pairs, Real voxel_size) : 
+Morph::Morph(std::string source_mesh_name, std::string target_mesh_name, CorrespType corresp_pairs, Real voxel_size, Real dense_voxel_size) : 
     source_mesh_name_(source_mesh_name),
     target_mesh_name_(target_mesh_name),
     corresp_pairs_(corresp_pairs),
-    voxel_size_(voxel_size)
+    voxel_size_(voxel_size),
+    dense_voxel_size_(dense_voxel_size)
 {
-    source_volume_ = VolumeObject(source_mesh_name, voxel_size);
-    target_volume_ = VolumeObject(target_mesh_name, voxel_size);
-
     /*
+    source_volume_ = VolumeObject(source_mesh_name, voxel_size, dense_voxel_size);
+    target_volume_ = VolumeObject(target_mesh_name, voxel_size, dense_voxel_size);
+    */
+
     source_volume_.initial(source_mesh_name, voxel_size);
     target_volume_.initial(target_mesh_name, voxel_size);
-    */
 
     for(int i=0; i < corresp_pairs_.size(); ++i)
     {

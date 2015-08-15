@@ -20,13 +20,13 @@
 
 class VolumeObject
 {
-
 public:
 	TriMesh mesh;
 	std::string mesh_name;
 	openvdb::FloatGrid::Ptr grid, dense_grid;
     //all active are inside tiles and voxel
     openvdb::BoolGrid::Ptr interior_grid, interior_dense_grid;
+
 	std::vector<openvdb::Vec3s> points;
 	std::vector<openvdb::Vec3I> triangles;
     // anchors for distance field
@@ -34,29 +34,34 @@ public:
     //tetrahedron index
     std::vector<Vector4i> mTetIndex;
     std::vector<std::pair<Matrix3r, Matrix3r> > mTetTransform;
+
     SpMat mLaplaceMatrix;
-    SpMat mLaplaceMatrix_18neighbor;
     Real transform_scale_;
     Real dense_transform_scale_;
+
     // constraint voxel index
     VectorXi constraint_index_;
     int voxel_num_; //sparse interior voxel num
     int  dense_voxel_num_;
+
     // relative sparse grid for TPS (then use TPS )
     MatrixX3r mVoxelPosition;
     //Dense Grid Position used for interpolate distance field
     MatrixX3r mDenseVoxelPosition;
     Vector3r mass_center; // object center
     int mass_center_voxel_index;
+
     MatrixXr distance_vector_field;
     typedef nanoflann::KDTreeEigenMatrixAdaptor<MatrixX3r, 3, nanoflann::metric_L2_Simple> kd_tree_type;
 
     VolumeObject(Real transform_scale=0.02);
 	VolumeObject(std::string mesh_name, Real transform_scale=0.02, Real dense_transform_scale=0.01);
 	~VolumeObject();
+
     void initial(std::string name, Real transform_scale=0.02, Real dense_transform_scale=0.01);
 	void initial_volume();
     void initial_dense_volume();
+
 	//compute vector field on anchor points
     void construct_laplace_matrix();
 	void calc_vector_field(); // harmonic field for distance 
@@ -72,7 +77,9 @@ public:
 
     std::vector<MyTriplet> triplet_with_constraint;
 
-
+    bool first_time_;
+    SpMat tet_matrix_, tet_normal_matrix;
+    Eigen::ConjugateGradient<SpMat> cg;
 };
 
 #endif
