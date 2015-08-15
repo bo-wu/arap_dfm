@@ -81,7 +81,7 @@ int main(int argc, char** argv)
 
     input_anchor.close();
 
-    Morph morph(argv[1], argv[2], corresp_pairs, 0.05);
+    Morph morph(argv[1], argv[2], corresp_pairs, 0.02, 0.01);
     morph.initial();
     morph.start_morph(0.1);
     morph.write_sequence();

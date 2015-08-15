@@ -35,16 +35,16 @@ Morph::Morph(std::string source_mesh_name, std::string target_mesh_name, Corresp
     target_volume_ = VolumeObject(target_mesh_name, voxel_size, dense_voxel_size);
     */
 
-    source_volume_.initial(source_mesh_name, voxel_size);
-    target_volume_.initial(target_mesh_name, voxel_size);
+    source_volume_.initial(source_mesh_name, voxel_size, dense_voxel_size);
+    target_volume_.initial(target_mesh_name, voxel_size, dense_voxel_size);
 
     for(int i=0; i < corresp_pairs_.size(); ++i)
     {
         source_volume_.mAnchors.push_back(corresp_pairs_[i].first);
         target_volume_.mAnchors.push_back(corresp_pairs_[i].second);
     }
-    std::cout << "source voxel num "<< source_volume_.voxel_num_<<std::endl;
-    std::cout << "target voxel num "<< target_volume_.voxel_num_<<std::endl;
+    std::cout << "source EMD voxel num "<< source_volume_.voxel_num_ <<" DFI voxel num "<< source_volume_.dense_voxel_num_<<std::endl;
+    std::cout << "target EMD voxel num "<< target_volume_.voxel_num_ <<" DFI voxel num "<< target_volume_.dense_voxel_num_<<std::endl;
 }
 
 Morph::~Morph()
@@ -141,10 +141,10 @@ void Morph::initial()
  */
 void Morph::start_morph (Real step_size)
 {
-    int dim =  0.5 * 1.2 / voxel_size_;
+    int dim =  0.5 * 1.2 / dense_voxel_size_;
     MatrixX3r grid_vertex(8*dim*dim*dim, 3);
 
-    openvdb::math::Transform::Ptr grid_transform = openvdb::math::Transform::createLinearTransform(voxel_size_);
+    openvdb::math::Transform::Ptr grid_transform = openvdb::math::Transform::createLinearTransform(dense_voxel_size_);
 
     openvdb::FloatGrid::Ptr temp_grid = openvdb::FloatGrid::create(2.0);
     temp_grid->setTransform(grid_transform);
@@ -176,7 +176,7 @@ void Morph::start_morph (Real step_size)
         ss << std::setw(4) << std::setfill('0') << i;
         grid_name = ss.str();
         morph_grid->setName(grid_name.c_str());
-        
+
         interpolate_grids(morph_grid, grid_vertex, i*step_size);
 
         elapse = (std::clock() - start) / (Real)(CLOCKS_PER_SEC);
@@ -217,9 +217,12 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     output_source_voxel.close();
     */
 
+    std::cout << "1\n";
     std::cout<<"backwards to source ";
     source_tps.compute_tps(source_intermedium, source_volume_.mDenseVoxelPosition);
+    std::cout << "2\n";
     source_tps.interpolate(grid_vertex, corresp_source_grid_points);
+    std::cout << "3\n";
 
     //backwards(target) mapping
     MatrixX3r target_intermedium;
@@ -242,11 +245,11 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     target_tps.compute_tps(target_intermedium, target_volume_.mDenseVoxelPosition);
     target_tps.interpolate(grid_vertex, corresp_target_grid_points);
 
-    openvdb::FloatGrid::ConstAccessor source_accessor = source_volume_.grid->getConstAccessor();
-    openvdb::FloatGrid::ConstAccessor target_accessor = target_volume_.grid->getConstAccessor();
+    openvdb::FloatGrid::ConstAccessor source_accessor = source_volume_.dense_grid->getConstAccessor();
+    openvdb::FloatGrid::ConstAccessor target_accessor = target_volume_.dense_grid->getConstAccessor();
 
-    openvdb::tools::GridSampler<openvdb::FloatGrid::ConstAccessor, openvdb::tools::BoxSampler> source_sampler(source_accessor, source_volume_.grid->transform());
-    openvdb::tools::GridSampler<openvdb::FloatGrid::ConstAccessor, openvdb::tools::BoxSampler> target_sampler(target_accessor, target_volume_.grid->transform());
+    openvdb::tools::GridSampler<openvdb::FloatGrid::ConstAccessor, openvdb::tools::BoxSampler> source_sampler(source_accessor, source_volume_.dense_grid->transform());
+    openvdb::tools::GridSampler<openvdb::FloatGrid::ConstAccessor, openvdb::tools::BoxSampler> target_sampler(target_accessor, target_volume_.dense_grid->transform());
 
     openvdb::FloatGrid::Accessor accessor = morph_grid->getAccessor();
     openvdb::Coord xyz;
@@ -254,7 +257,7 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     Real value;
     int index;
     Vector3r source_vert, target_vert;
-    int dim = 0.5 * 1.2 / voxel_size_;
+    int dim = 0.5 * 1.2 / dense_voxel_size_;
     for(int i=-dim; i < dim; ++i)
         for(int j=-dim; j < dim; ++j)
             for(int k=-dim; k < dim; ++k)

@@ -38,6 +38,7 @@ VolumeObject::VolumeObject(std::string name, Real transform_scale, Real dense_tr
     dense_transform_scale_ = dense_transform_scale;
     first_time_ = true;
 	initial_volume();
+    initial_dense_volume();
 }
 
 void VolumeObject::initial(std::string name, Real transform_scale, Real dense_transform_scale)
@@ -47,6 +48,7 @@ void VolumeObject::initial(std::string name, Real transform_scale, Real dense_tr
     dense_transform_scale_ = dense_transform_scale;
     first_time_ = true;
     initial_volume();
+    initial_dense_volume();
 }
 
 VolumeObject::~VolumeObject()
@@ -70,6 +72,16 @@ void VolumeObject::initial_volume()
     //make inside grid dense
     interior_grid->tree().voxelizeActiveTiles();
     voxel_num_ = interior_grid->tree().activeVoxelCount();
+
+    mVoxelPosition = MatrixX3r::Zero(voxel_num_, 3);
+
+    int k = 0;
+    for(auto iter=interior_grid->cbeginValueOn(); iter; ++iter, ++k)
+    {
+        auto voxel_pos = grid->indexToWorld(iter.getCoord());
+        mVoxelPosition.row(k) << voxel_pos[0], voxel_pos[1], voxel_pos[2];
+    }
+
 } //end of initial_volume
 
 
@@ -78,15 +90,97 @@ void VolumeObject::initial_volume()
 void VolumeObject::initial_dense_volume()
 {
     dense_grid = openvdb::FloatGrid::create(2.0);
-    openvdb::math::Transform::Ptr grid_transform = openvdb::math::Transform::createLinearTransform(transform_scale_);
+    openvdb::math::Transform::Ptr grid_transform = openvdb::math::Transform::createLinearTransform(dense_transform_scale_);
     dense_grid->setTransform(grid_transform);
     dense_grid->setGridClass(openvdb::GRID_LEVEL_SET);
     dense_grid->setName("dense_grid");
     dense_grid = openvdb::tools::meshToLevelSet<openvdb::FloatGrid>(dense_grid->transform(), points, triangles, float(openvdb::LEVEL_SET_HALF_WIDTH));
 
     interior_dense_grid = openvdb::tools::sdfInteriorMask(*dense_grid);
-    interior_grid->tree().voxelizeActiveTiles();
+    interior_dense_grid->tree().voxelizeActiveTiles();
     dense_voxel_num_ = interior_dense_grid->tree().activeVoxelCount();
+
+    // get dense point coordinates
+    mDenseVoxelPosition = MatrixX3r(dense_voxel_num_, 3);
+
+    int k = 0;
+    for(auto iter=interior_dense_grid->cbeginValueOn(); iter; ++iter, ++k)
+    {
+        auto voxel_pos = dense_grid->indexToWorld(iter.getCoord());
+        mDenseVoxelPosition.row(k) << voxel_pos[0], voxel_pos[1], voxel_pos[2];
+    }
+
+    for(int i=0; i < 3; ++i)
+    {
+        mass_center(i) = mDenseVoxelPosition.col(i).mean();
+    }
+
+    // construct tetrahedron
+    kd_tree_type dense_voxel_kdtree(3, mDenseVoxelPosition);
+    dense_voxel_kdtree.index->buildIndex();
+    long int outIndex;
+    Real outDistance;
+    dense_voxel_kdtree.query(mass_center.data(), 1, &outIndex, &outDistance);
+
+    // keep fixed
+    mass_center_voxel_index = outIndex;
+    mass_center = mDenseVoxelPosition.row(outIndex);
+
+    // construct tetrahedron
+    std::vector< std::vector<int> > neighbor_index_3d; //3 directions
+    std::vector<int> neighbor_index_1d; // 1 direction
+    
+    openvdb::Coord v_coord;
+    Vector3r v_world_pos;
+
+    k = 0;
+    for(auto iter=interior_dense_grid->cbeginValueOn(); iter; ++iter, ++k)
+    {
+        v_coord = iter.getCoord();
+        neighbor_index_3d.clear();
+        for(int i=0; i < 3; ++i)
+        {
+            neighbor_index_1d.clear();
+            for(int j=-1; j<=1; j+=2)
+            {
+                auto temp_coord = v_coord;
+                temp_coord[i] = v_coord[i] + j;
+                if(interior_dense_grid->tree().isValueOn(temp_coord))
+                {
+                    auto voxel_pos = dense_grid->indexToWorld(temp_coord);
+                    v_world_pos << voxel_pos[0], voxel_pos[1], voxel_pos[2];
+                    dense_voxel_kdtree.query(v_world_pos.data(), 1, &outIndex, &outDistance);
+                    if(outDistance > 1.0e-10)
+                    {
+                        std::cerr <<"Dense Distance " << outDistance <<" should be 0.0\n";
+                    }
+                    neighbor_index_1d.push_back(outIndex);
+                }
+            }
+            if(neighbor_index_1d.size() > 0)
+            {
+                neighbor_index_3d.push_back(neighbor_index_1d);
+            }
+        }
+
+        // construct tetrahedron
+        if(neighbor_index_3d.size() == 3)
+        {
+            Vector4i tet_index;
+            tet_index(0) = k;
+            for(int l=0; l < neighbor_index_3d[0].size(); ++l)
+                for(int m=0; m < neighbor_index_3d[1].size(); ++m)
+                    for(int n=0; n < neighbor_index_3d[2].size(); ++n)
+                    {
+                        tet_index(1) = neighbor_index_3d[0].at(l);
+                        tet_index(2) = neighbor_index_3d[1].at(m);
+                        tet_index(3) = neighbor_index_3d[2].at(n);
+                        mTetIndex.push_back(tet_index);
+                    }
+        }
+
+    }
+
 }
 
 
@@ -107,22 +201,8 @@ void VolumeObject::construct_laplace_matrix()
     auto voxelNum = interior_grid->tree().activeLeafVoxelCount();
     auto anchorNum = mAnchors.size();
     mLaplaceMatrix = SpMat(voxelNum, voxelNum);
-    mVoxelPosition = MatrixX3r::Zero(voxelNum, 3);
     distance_vector_field = MatrixXr::Zero(voxelNum, anchorNum);
     int k = 0;
-
-    for(auto iter=interior_grid->cbeginValueOn(); iter; ++iter, ++k)
-    {
-        auto voxel_pos = grid->indexToWorld(iter.getCoord());
-        mVoxelPosition.row(k) << voxel_pos[0], voxel_pos[1], voxel_pos[2];
-    }
-    // temporal for testing, need to change 
-    mDenseVoxelPosition = mVoxelPosition;
-
-    for(int i=0; i < 3; ++i)
-    {
-        mass_center(i) = mVoxelPosition.col(i).mean();
-    }
 
     //find neighbor voxel index
     kd_tree_type voxelKDTree(3, mVoxelPosition);
@@ -130,14 +210,6 @@ void VolumeObject::construct_laplace_matrix()
     long int outIndex;
     Real outDistance;
     voxelKDTree.query(mass_center.data(), 1, &outIndex, &outDistance);
-
-    // keep fixed
-    mass_center_voxel_index = outIndex;
-    mass_center = mVoxelPosition.row(outIndex);
-
-    // construct tetrahedron
-    std::vector< std::vector<int> > neighbor_index_3d; //3 directions
-    std::vector<int> neighbor_index_1d; // 1 direction
 
     // 6 neighbor
     std::vector<MyTriplet> laplace_triplet_list;
@@ -151,12 +223,10 @@ void VolumeObject::construct_laplace_matrix()
     // laplace matrix
     for(auto iter=interior_grid->cbeginValueOn(); iter; ++iter, ++k)
     {
-        neighbor_index_3d.clear();
         v_coord = iter.getCoord();
         degree = 0;
         for(int i=0; i < 3; ++i)
         {
-            neighbor_index_1d.clear();
             for(int j=-1; j <= 1; j+=2)
             {
                 auto temp_coord = v_coord;
@@ -172,32 +242,12 @@ void VolumeObject::construct_laplace_matrix()
                         std::cerr<<"Distance "<<outDistance<<" should be 0.0\n";
                     }
                     laplace_triplet_list.push_back(MyTriplet(k, outIndex, -1));
-                    neighbor_index_1d.push_back(outIndex);
                 }
-            }
-            if (neighbor_index_1d.size() > 0)
-            {
-                neighbor_index_3d.push_back(neighbor_index_1d);
             }
         }
         
         laplace_triplet_list.push_back(MyTriplet(k, k, degree));
 
-        // construct tetrahedron
-        if(neighbor_index_3d.size() == 3)
-        {
-            Vector4i tet_index;
-            tet_index(0) = k;
-            for(int l=0; l < neighbor_index_3d[0].size(); ++l)
-                for(int m=0; m < neighbor_index_3d[1].size(); ++m)
-                    for(int n=0; n < neighbor_index_3d[2].size(); ++n)
-                    {
-                        tet_index(1) = neighbor_index_3d[0].at(l);
-                        tet_index(2) = neighbor_index_3d[1].at(m);
-                        tet_index(3) = neighbor_index_3d[2].at(n);
-                        mTetIndex.push_back(tet_index);
-                    }
-        }
     }
 
     mLaplaceMatrix.setFromTriplets(laplace_triplet_list.begin(), laplace_triplet_list.end());
@@ -325,7 +375,7 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
     int dense_voxel_num = mDenseVoxelPosition.rows();
     int tet_num = mTetIndex.size();
 
-    inter_corresp_points = MatrixX3r::Zero(dense_voxel_num, 3);
+    inter_corresp_points = MatrixX3r(dense_voxel_num, 3);
 
     Real weight = 10.0;
 
@@ -353,7 +403,6 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
 
         tet_normal_matrix = tet_matrix_.transpose() * tet_matrix_;
         cg.compute(tet_normal_matrix);
-        std::cout<<"tet_Normal_matrix shape " << tet_normal_matrix.rows()<<", "<<tet_normal_matrix.cols()<<std::endl;
         first_time_ = false;
     }
 
