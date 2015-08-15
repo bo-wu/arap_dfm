@@ -45,6 +45,13 @@ Morph::Morph(std::string source_mesh_name, std::string target_mesh_name, Corresp
     }
     std::cout << "source EMD voxel num "<< source_volume_.voxel_num_ <<" DFI voxel num "<< source_volume_.dense_voxel_num_<<std::endl;
     std::cout << "target EMD voxel num "<< target_volume_.voxel_num_ <<" DFI voxel num "<< target_volume_.dense_voxel_num_<<std::endl;
+
+    // to make them well aligned 
+    target_volume_.mass_center = source_volume_.mass_center;
+    for(int i=0; i < source_volume_.tet_anchor.size(); ++i)
+    {
+        target_volume_.tet_anchor[i].first = source_volume_.tet_anchor[i].first;
+    }
 }
 
 Morph::~Morph()
@@ -90,10 +97,12 @@ void Morph::initial()
     source_target_tps.interpolate(source_volume_.mDenseVoxelPosition, corresp_S_T_);
     source_volume_.calc_tetrahedron_transform(corresp_S_T_);
     
+#ifdef BASIC_DEBUG_
     matrix_to_point_cloud_file(emd_flow.corresp_source_target_, "source_emd");
     matrix_to_point_cloud_file(emd_flow.corresp_target_source_, "target_emd");
     matrix_to_point_cloud_file(source_volume_.mDenseVoxelPosition, "source_voxel");
     matrix_to_point_cloud_file(target_volume_.mDenseVoxelPosition, "target_voxel");
+#endif
 
     /*  
     std::ofstream output_source_emd("source_emd.dat");
@@ -112,8 +121,10 @@ void Morph::initial()
     target_source_tps.interpolate(target_volume_.mDenseVoxelPosition, corresp_T_S_);
     target_volume_.calc_tetrahedron_transform(corresp_T_S_);
 
+#ifdef BASIC_DEBUG_
     matrix_to_point_cloud_file(corresp_S_T_, "source_corresp");
     matrix_to_point_cloud_file(corresp_T_S_, "target_corresp");
+#endif
     
     /*  
     std::ofstream output_target_emd("target_emd.dat");
@@ -200,13 +211,16 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
 
     t = std::min(std::max(0.0, t), 1.0);
 
+//#pragma omp parallel sections
     //backwards(source) mapping
     MatrixX3r source_intermedium;
     std::cout<<"source ";
     source_volume_.find_intermedium_points(source_intermedium, t);
 
+#ifdef BASIC_DEBUG_
     std::string source_inter_name = "./output_result_data/source_intermedium" + std::to_string(int(10*t));
     matrix_to_point_cloud_file(source_intermedium, source_inter_name);
+#endif
 
     /*  
     std::ofstream output_source_tps("source_intermedium.dat");
@@ -217,12 +231,9 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     output_source_voxel.close();
     */
 
-    std::cout << "1\n";
     std::cout<<"backwards to source ";
     source_tps.compute_tps(source_intermedium, source_volume_.mDenseVoxelPosition);
-    std::cout << "2\n";
     source_tps.interpolate(grid_vertex, corresp_source_grid_points);
-    std::cout << "3\n";
 
     //backwards(target) mapping
     MatrixX3r target_intermedium;
@@ -230,9 +241,10 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     target_volume_.find_intermedium_points(target_intermedium, 1-t);
     std::cout<<"backwards to target ";
 
+#ifdef BASIC_DEBUG_
     std::string target_inter_name = "./output_result_data/target_intermedium" + std::to_string(int(10*t));
     matrix_to_point_cloud_file(target_intermedium, target_inter_name);
-
+#endif
     /*  
     std::ofstream output_target_tps("target_intermedium.dat");
     output_target_tps << target_intermedium;

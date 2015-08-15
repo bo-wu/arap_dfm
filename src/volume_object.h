@@ -50,6 +50,7 @@ public:
     MatrixX3r mDenseVoxelPosition;
     Vector3r mass_center; // object center
     int mass_center_voxel_index;
+    std::vector<std::pair<Vector3r, int> > tet_anchor;
 
     MatrixXr distance_vector_field;
     typedef nanoflann::KDTreeEigenMatrixAdaptor<MatrixX3r, 3, nanoflann::metric_L2_Simple> kd_tree_type;

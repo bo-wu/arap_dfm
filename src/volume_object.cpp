@@ -122,6 +122,17 @@ void VolumeObject::initial_dense_volume()
     Real outDistance;
     dense_voxel_kdtree.query(mass_center.data(), 1, &outIndex, &outDistance);
 
+    for(int i=0; i < 3; ++i)
+    {
+        Vector3r v_voxel = mass_center;
+        for(int j=-1; j<=1; j+=2)
+        {
+            v_voxel(i) += j * 2 * dense_transform_scale_;
+            dense_voxel_kdtree.query(v_voxel.data(), 1, &outIndex, &outDistance);
+            tet_anchor.push_back(std::make_pair(mDenseVoxelPosition.row(outIndex), outIndex));
+        }
+    }
+
     // keep fixed
     mass_center_voxel_index = outIndex;
     mass_center = mDenseVoxelPosition.row(outIndex);
@@ -209,7 +220,6 @@ void VolumeObject::construct_laplace_matrix()
     voxelKDTree.index->buildIndex();
     long int outIndex;
     Real outDistance;
-    voxelKDTree.query(mass_center.data(), 1, &outIndex, &outDistance);
 
     // 6 neighbor
     std::vector<MyTriplet> laplace_triplet_list;
@@ -372,6 +382,7 @@ void VolumeObject::calc_tetrahedron_transform(const MatrixX3r &final_corresp_poi
 void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, const Real t)
 {
     int fixed_num = 1;
+    fixed_num += tet_anchor.size();
     int dense_voxel_num = mDenseVoxelPosition.rows();
     int tet_num = mTetIndex.size();
 
@@ -398,6 +409,10 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
 
         // mass_center is not real the anchor point's position(a little difference)
         tet_triplet_list.push_back(MyTriplet(3*tet_num, mass_center_voxel_index, weight));
+        for(int i=0; i < tet_anchor.size(); ++i)
+        {
+            tet_triplet_list.push_back(MyTriplet(3*tet_num+1+i, tet_anchor[i].second, weight));
+        }
 
         tet_matrix_.setFromTriplets(tet_triplet_list.begin(), tet_triplet_list.end());
 
@@ -442,6 +457,12 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
 //    output_transform.close();
 
     B.row(3*tet_num) = weight * mass_center;
+
+    for(int i=0; i < tet_anchor.size(); ++i)
+    {
+        B.row(3*tet_num+1+i) = weight * tet_anchor[i].first;
+    }
+
     B = tet_matrix_.transpose() * B;
 
     std::clock_t start;
