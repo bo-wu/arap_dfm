@@ -81,12 +81,14 @@ void Morph::initial()
     source_volume_.calc_vector_field();  
     target_volume_.calc_vector_field();
 
+#ifdef BASIC_DEBUG_
     std::ofstream output_source_dist("source_dist.dat");
     output_source_dist << source_volume_.distance_vector_field;
     output_source_dist.close();
     std::ofstream output_target_dist("target_dist.dat");
     output_target_dist << target_volume_.distance_vector_field;
     output_target_dist.close();
+#endif
 
     EMD emd_flow;
     emd_flow.construct_correspondence(source_volume_, target_volume_);
@@ -211,7 +213,11 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
 
     t = std::min(std::max(0.0, t), 1.0);
 
-//#pragma omp parallel sections
+///#pragma omp parallel sections
+///{
+///    #pragma omp section
+///    {
+
     //backwards(source) mapping
     MatrixX3r source_intermedium;
     std::cout<<"source ";
@@ -222,18 +228,15 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     matrix_to_point_cloud_file(source_intermedium, source_inter_name);
 #endif
 
-    /*  
-    std::ofstream output_source_tps("source_intermedium.dat");
-    output_source_tps << source_intermedium;
-    output_source_tps.close();
-    std::ofstream output_source_voxel("source_voxel.dat");
-    output_source_voxel << source_volume_.mDenseVoxelPosition;
-    output_source_voxel.close();
-    */
-
+ 
     std::cout<<"backwards to source ";
     source_tps.compute_tps(source_intermedium, source_volume_.mDenseVoxelPosition);
     source_tps.interpolate(grid_vertex, corresp_source_grid_points);
+
+//    }
+//
+//    #pragma omp section
+//    {
 
     //backwards(target) mapping
     MatrixX3r target_intermedium;
@@ -245,18 +248,13 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     std::string target_inter_name = "./output_result_data/target_intermedium" + std::to_string(int(10*t));
     matrix_to_point_cloud_file(target_intermedium, target_inter_name);
 #endif
-    /*  
-    std::ofstream output_target_tps("target_intermedium.dat");
-    output_target_tps << target_intermedium;
-    output_target_tps.close();
-    std::ofstream output_target_voxel("target_voxel.dat");
-    output_target_voxel << target_volume_.mDenseVoxelPosition;
-    output_target_voxel.close();
-    */
 
     target_tps.compute_tps(target_intermedium, target_volume_.mDenseVoxelPosition);
     target_tps.interpolate(grid_vertex, corresp_target_grid_points);
 
+//    }
+//
+//}
     openvdb::FloatGrid::ConstAccessor source_accessor = source_volume_.dense_grid->getConstAccessor();
     openvdb::FloatGrid::ConstAccessor target_accessor = target_volume_.dense_grid->getConstAccessor();
 
@@ -270,6 +268,8 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     int index;
     Vector3r source_vert, target_vert;
     int dim = 0.5 * 1.2 / dense_voxel_size_;
+
+
     for(int i=-dim; i < dim; ++i)
         for(int j=-dim; j < dim; ++j)
             for(int k=-dim; k < dim; ++k)

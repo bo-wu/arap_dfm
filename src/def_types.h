@@ -23,6 +23,7 @@
 //use igl static lib
 #define IGL_STATIC_LIBRARY
 //#define PARALLEL_OMP_
+//#define BASIC_DEBUG_
 
 typedef double Real;
 

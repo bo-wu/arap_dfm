@@ -145,6 +145,7 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t, cons
     std::cout << "target control point num " << target_control.size()<<std::endl;
 
 
+    /*  
     std::ofstream output_source_control_index("source_control_index.dat");
     std::ofstream output_source_control_target_index("source_control_target_index.dat");
     for(int i=0; i < source_control.size(); ++i)
@@ -163,7 +164,6 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t, cons
     }
     output_target_control_index.close();
     output_target_control_source_index.close();
-    /*  
     */
 
     /* //for debug
