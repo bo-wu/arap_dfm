@@ -23,7 +23,7 @@
 #include "network_simplex_simple.h"
 #include "def_types.h"
 
-#define BASIC_DEBUG_
+//#define BASIC_DEBUG_
 
 /* 
  * ===  FUNCTION  ======================================================================

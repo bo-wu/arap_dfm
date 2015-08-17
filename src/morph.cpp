@@ -23,21 +23,24 @@
 #include "morph.h"
 #include "util.h"
 
-#define BASIC_DEBUG_
+//#define BASIC_DEBUG_
 
-Morph::Morph(std::string source_mesh_name, std::string target_mesh_name, CorrespType corresp_pairs, Real voxel_size, Real dense_voxel_size) : 
+Morph::Morph(std::string source_mesh_name, std::string target_mesh_name, CorrespType corresp_pairs, Real source_voxel_size, Real source_dense_voxel_size, Real target_voxel_size, Real target_dense_voxel_size) : 
     source_mesh_name_(source_mesh_name),
     target_mesh_name_(target_mesh_name),
     corresp_pairs_(corresp_pairs),
-    voxel_size_(voxel_size),
-    dense_voxel_size_(dense_voxel_size)
+    source_voxel_size_(source_voxel_size),
+    source_dense_voxel_size_(source_dense_voxel_size),
+    target_voxel_size_(target_voxel_size),
+    target_dense_voxel_size_(target_dense_voxel_size)
 {
     /*
     source_volume_ = VolumeObject(source_mesh_name, voxel_size, dense_voxel_size);
+    target_volume_ = VolumeObject(target_mesh_name, voxel_size, dense_voxel_size);
     */
 
-    source_volume_.initial(source_mesh_name, voxel_size, dense_voxel_size);
-    target_volume_.initial(target_mesh_name, voxel_size, dense_voxel_size);
+    source_volume_.initial(source_mesh_name, source_voxel_size, source_dense_voxel_size);
+    target_volume_.initial(target_mesh_name, target_voxel_size, target_dense_voxel_size);
 
     for(int i=0; i < corresp_pairs_.size(); ++i)
     {
@@ -89,36 +92,28 @@ void Morph::initial()
     emd_flow.construct_correspondence(source_volume_, target_volume_);
 
     ThinPlateSpline source_target_tps, target_source_tps;
-    
+#pragma omp parallel sections
+{
+    #pragma omp section
+    {
     source_target_tps.compute_tps(emd_flow.source_control_points_, emd_flow.corresp_source_target_);
     source_target_tps.interpolate(source_volume_.mDenseVoxelPosition, corresp_S_T_);
     source_volume_.calc_tetrahedron_transform(corresp_S_T_);
+    }
     
+    #pragma omp section
+    {
+    target_source_tps.compute_tps(emd_flow.target_control_points_, emd_flow.corresp_target_source_);
+    target_source_tps.interpolate(target_volume_.mDenseVoxelPosition, corresp_T_S_);
+    target_volume_.calc_tetrahedron_transform(corresp_T_S_);
+    }
+
+}
 #ifdef BASIC_DEBUG_
     matrix_to_point_cloud_file(emd_flow.corresp_source_target_, "source_emd");
     matrix_to_point_cloud_file(emd_flow.corresp_target_source_, "target_emd");
     matrix_to_point_cloud_file(source_volume_.mDenseVoxelPosition, "source_voxel");
     matrix_to_point_cloud_file(target_volume_.mDenseVoxelPosition, "target_voxel");
-#endif
-
-    /*  
-    std::ofstream output_source_emd("source_emd.dat");
-    output_source_emd << emd_flow.corresp_source_target_;
-    output_source_emd.close();
-
-    std::ofstream output_source_voxel("source_voxel.dat");
-    output_source_voxel<< source_volume_.mDenseVoxelPosition;
-    output_source_voxel.close();
-    std::ofstream output_source_corresp("source_corresp.dat");
-    output_source_corresp << corresp_S_T_;
-    output_source_corresp.close();
-    */
-
-    target_source_tps.compute_tps(emd_flow.target_control_points_, emd_flow.corresp_target_source_);
-    target_source_tps.interpolate(target_volume_.mDenseVoxelPosition, corresp_T_S_);
-    target_volume_.calc_tetrahedron_transform(corresp_T_S_);
-
-#ifdef BASIC_DEBUG_
     matrix_to_point_cloud_file(corresp_S_T_, "source_corresp");
     matrix_to_point_cloud_file(corresp_T_S_, "target_corresp");
 #endif
@@ -149,10 +144,11 @@ void Morph::initial()
  */
 void Morph::start_basic_morph (Real step_size)
 {
-    int dim =  0.5 * 1.2 / dense_voxel_size_;
+    auto min_size = std::min(source_dense_voxel_size_, target_dense_voxel_size_);
+    int dim =  0.5 * 1.1 / min_size;
     MatrixX3r grid_vertex(8*dim*dim*dim, 3);
 
-    openvdb::math::Transform::Ptr grid_transform = openvdb::math::Transform::createLinearTransform(dense_voxel_size_);
+    openvdb::math::Transform::Ptr grid_transform = openvdb::math::Transform::createLinearTransform(min_size);
 
     openvdb::FloatGrid::Ptr temp_grid = openvdb::FloatGrid::create(2.0);
     temp_grid->setTransform(grid_transform);
@@ -234,11 +230,6 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     source_intermedium.rowwise() += average_offset;
     //====== end alignment 
     //
-#ifdef BASIC_DEBUG_
-    std::string source_inter_name = "./output_result_data/source_intermedium" + std::to_string(int(10*t));
-    matrix_to_point_cloud_file(source_intermedium, source_inter_name);
-#endif
-
  
     std::cout<<"backwards to source ";
     source_tps.compute_tps(source_intermedium, source_volume_.mDenseVoxelPosition);
@@ -253,6 +244,8 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     std::cout<<"backwards to target ";
 
 #ifdef BASIC_DEBUG_
+    std::string source_inter_name = "./output_result_data/source_intermedium" + std::to_string(int(10*t));
+    matrix_to_point_cloud_file(source_intermedium, source_inter_name);
     std::string target_inter_name = "./output_result_data/target_intermedium" + std::to_string(int(10*t));
     matrix_to_point_cloud_file(target_intermedium, target_inter_name);
 #endif
@@ -270,27 +263,34 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     openvdb::tools::GridSampler<openvdb::FloatGrid::ConstAccessor, openvdb::tools::BoxSampler> target_sampler(target_accessor, target_volume_.dense_grid->transform());
 
     openvdb::FloatGrid::Accessor accessor = morph_grid->getAccessor();
-    openvdb::Coord xyz;
 
+    /*
+    openvdb::Coord xyz;
     Real value;
     int index;
     Vector3r source_vert, target_vert;
-    int dim = 0.5 * 1.2 / dense_voxel_size_;
+    */
 
+    auto min_size = std::min(source_dense_voxel_size_, target_dense_voxel_size_);
+    int dim = 0.5 * 1.1 / min_size;
 
+#pragma omp parallel for collapse(3)
     for(int i=-dim; i < dim; ++i)
         for(int j=-dim; j < dim; ++j)
             for(int k=-dim; k < dim; ++k)
             {
+                openvdb::Coord xyz;
                 xyz.reset(i, j, k);
-                index = 4*(i+dim)*dim*dim + 2*(j+dim)*dim + k+dim;
+                int index = 4*(i+dim)*dim*dim + 2*(j+dim)*dim + k+dim;
 
-                source_vert = corresp_source_grid_points.row(index);
-                target_vert = corresp_target_grid_points.row(index);
-                value = (1-t) * source_sampler.wsSample(openvdb::Vec3d(source_vert(0), source_vert(1), source_vert(2)))
+                Vector3r source_vert = corresp_source_grid_points.row(index);
+                Vector3r target_vert = corresp_target_grid_points.row(index);
+                Real value = (1-t) * source_sampler.wsSample(openvdb::Vec3d(source_vert(0), source_vert(1), source_vert(2)))
                     + t * target_sampler.wsSample(openvdb::Vec3R(target_vert(0), target_vert(1), target_vert(2)));
                 if(value < 0.1 && value > -0.1)
                     accessor.setValue(xyz, value);
+                else
+                    accessor.setValueOff(xyz);
             }
 
     openvdb::tools::signedFloodFill(morph_grid->tree());

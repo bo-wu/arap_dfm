@@ -23,9 +23,10 @@
 
 struct Morph
 {
-    Morph(std::string source_mesh_name, std::string target_mesh_name, CorrespType corresp_pairs, Real voxel_size=0.02, Real dense_voxel_size=0.01);
+    Morph(std::string source_mesh_name, std::string target_mesh_name, CorrespType corresp_pairs, Real source_voxel_size=0.02, Real sourc_dense_voxel_size=0.01, Real target_voxel_size=0.02, Real target_dense_voxel_size=0.01);
 	~Morph();
-    Real voxel_size_, dense_voxel_size_;
+    Real source_voxel_size_, source_dense_voxel_size_;
+    Real target_voxel_size_, target_dense_voxel_size_;
     //openvdb::FloatGrid::Ptr result_grid;
     std::vector<openvdb::FloatGrid::Ptr> grid_vec_;
     std::string source_mesh_name_, target_mesh_name_;

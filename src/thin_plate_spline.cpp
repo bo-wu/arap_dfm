@@ -60,34 +60,27 @@ void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX
     MatrixX3r B = MatrixX3r::Zero(v_num+4, 3);
     B.block(0,0, v_num, 3) = expected_positions;
 
-#ifdef PARALLEL_OMP_
-#pragma omp parallel 
-#endif
-    {
+    Real alpha = 0.0;
 
-    Real r, alpha = 0.0;
 #ifdef PARALLEL_OMP_
-#pragma omp for
 #endif
+#pragma omp parallel for collapse(2)
     for(int i=0; i < v_num; ++i)
     {
         for(int j=i+1; j < v_num; ++j)
         {
-            r = (control_points.row(i) - control_points.row(j)).norm();
+            Real r = (control_points.row(i) - control_points.row(j)).norm();
             L(i, j) = L(j, i) = kernel(r);
             alpha += r * 2;
         }
     }
+
     alpha /= (Real)(v_num * v_num);
     auto smooth_term = alpha * alpha * m_lambda;
-#ifdef PARALLEL_OMP_
-#pragma omp for
-#endif
+
     for(int i=0; i < v_num; ++i)
     {
         L(i, i) = smooth_term;
-    }
-
     }
 
     L.block(0, v_num, v_num, 1) = VectorXr::Ones(v_num);
@@ -98,9 +91,7 @@ void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX
     arma::mat arma_L = arma::mat(v_num+4, v_num+4);
     arma::mat arma_B = arma::mat(v_num+4, 3);
 
-#ifdef PARALLEL_OMP_
 #pragma omp parallel for
-#endif
     for(int i=0; i < v_num+4; ++i)
     {
         for(int j=0; j < v_num+4; ++j)
@@ -138,8 +129,8 @@ void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX
     std::cout <<"tps computation elapse " << elapse <<"s\n";
 
 #ifdef PARALLEL_OMP_
-#pragma omp parallel for
 #endif
+#pragma omp parallel for
     for(int i=0; i < v_num+4; ++i)
         for(int j=0; j < 3; ++j)
         {
@@ -167,22 +158,21 @@ void ThinPlateSpline::interpolate(const MatrixX3r &input, MatrixX3r &output)
     int control_num = mControlPoints.rows();
 
     output = MatrixX3r::Zero(input_rows, 3);
-    MatrixXr L_matrix(input_rows, control_num+4);
 
 #ifdef PARALLEL_OMP_
-#pragma omp parallel for 
 #endif
+#pragma omp parallel for 
     for(int i=0; i < input_rows; ++i)
     {
+        RowVectorXr tps_element(control_num+4);
         for(int j=0; j < control_num; ++j)
         {
-            L_matrix(i, j) = kernel( (mControlPoints.row(j) - input.row(i)).norm() );
+            tps_element(j) = kernel( (mControlPoints.row(j) - input.row(i)).norm() );
         }
+        tps_element(control_num) = 1.0;
+        tps_element.tail<3>() = input.row(i);
+        output.row(i) = tps_element * mCoeff;
     }
-
-    L_matrix.block(0,control_num, input_rows, 1) = VectorXr::Ones(input_rows);
-    L_matrix.block(0,control_num+1, input_rows, 3) = input;
-    output = L_matrix * mCoeff;
 
     /*
     std::ofstream output_coeff("coefficient.dat");

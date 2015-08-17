@@ -88,6 +88,7 @@ void VolumeObject::initial_volume()
 
 ///generate dense voxel grid from mesh
 // should call initial volume first
+// dense voxel grid only used for supply depth value
 void VolumeObject::initial_dense_volume()
 {
     dense_grid = openvdb::FloatGrid::create(2.0);
@@ -101,6 +102,7 @@ void VolumeObject::initial_dense_volume()
     interior_dense_grid->tree().voxelizeActiveTiles();
     dense_voxel_num_ = interior_dense_grid->tree().activeVoxelCount();
 
+    /*  dense verion not work due to huge computation cost in TPS
     // get dense point coordinates
     mDenseVoxelPosition = MatrixX3r(dense_voxel_num_, 3);
 
@@ -110,6 +112,11 @@ void VolumeObject::initial_dense_volume()
         auto voxel_pos = dense_grid->indexToWorld(iter.getCoord());
         mDenseVoxelPosition.row(k) << voxel_pos[0], voxel_pos[1], voxel_pos[2];
     }
+    */
+
+    /////simply use coarse version
+    mDenseVoxelPosition = mVoxelPosition;
+    //
 
     for(int i=0; i < 3; ++i)
     {
@@ -123,12 +130,15 @@ void VolumeObject::initial_dense_volume()
     Real outDistance;
     dense_voxel_kdtree.query(mass_center.data(), 1, &outIndex, &outDistance);
 
+    ////use coarse version
+    dense_transform_scale_ = transform_scale_;
+    ////
     for(int i=0; i < 3; ++i)
     {
         Vector3r v_voxel = mass_center;
         for(int j=-1; j<=1; j+=2)
         {
-            v_voxel(i) += j * 2 * dense_transform_scale_;
+            v_voxel(i) += j * 1 * dense_transform_scale_;
             dense_voxel_kdtree.query(v_voxel.data(), 1, &outIndex, &outDistance);
             tet_anchor.push_back(std::make_pair(mDenseVoxelPosition.row(outIndex), outIndex));
         }
@@ -145,8 +155,11 @@ void VolumeObject::initial_dense_volume()
     openvdb::Coord v_coord;
     Vector3r v_world_pos;
 
-    k = 0;
-    for(auto iter=interior_dense_grid->cbeginValueOn(); iter; ++iter, ++k)
+    int k = 0;
+    //
+    ///for(auto iter=interior_dense_grid->cbeginValueOn(); iter; ++iter, ++k)
+    // use coarse version
+    for(auto iter=interior_grid->cbeginValueOn(); iter; ++iter, ++k)
     {
         v_coord = iter.getCoord();
         neighbor_index_3d.clear();
@@ -157,9 +170,15 @@ void VolumeObject::initial_dense_volume()
             {
                 auto temp_coord = v_coord;
                 temp_coord[i] = v_coord[i] + j;
-                if(interior_dense_grid->tree().isValueOn(temp_coord))
+                //
+                //if(interior_dense_grid->tree().isValueOn(temp_coord))
+                // use coarse version
+                if(interior_grid->tree().isValueOn(temp_coord))
                 {
-                    auto voxel_pos = dense_grid->indexToWorld(temp_coord);
+                    //
+                    //auto voxel_pos = dense_grid->indexToWorld(temp_coord);
+                    //use coarse version
+                    auto voxel_pos = grid->indexToWorld(temp_coord);
                     v_world_pos << voxel_pos[0], voxel_pos[1], voxel_pos[2];
                     dense_voxel_kdtree.query(v_world_pos.data(), 1, &outIndex, &outDistance);
                     if(outDistance > 1.0e-10)
@@ -458,6 +477,7 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
     }
 //    output_transform.close();
 
+    // add more anchors to make solver stable
     B.row(3*tet_num) = weight * mass_center;
 
     for(int i=0; i < tet_anchor.size(); ++i)
