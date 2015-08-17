@@ -619,7 +619,7 @@ void VolumeObject::write_grid(std::string name)
 {
 	if(name.substr(name.length()-4, 4).compare(".vdb") != 0)
 	{
-		name = name + ".vdb";
+		name = name.substr(0, name.length()-4) + ".vdb";
 	}
 	openvdb::io::File file(name);
     /*  

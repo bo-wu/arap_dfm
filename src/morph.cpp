@@ -23,6 +23,8 @@
 #include "morph.h"
 #include "util.h"
 
+#define BASIC_DEBUG_
+
 Morph::Morph(std::string source_mesh_name, std::string target_mesh_name, CorrespType corresp_pairs, Real voxel_size, Real dense_voxel_size) : 
     source_mesh_name_(source_mesh_name),
     target_mesh_name_(target_mesh_name),
