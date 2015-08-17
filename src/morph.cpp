@@ -48,14 +48,6 @@ Morph::Morph(std::string source_mesh_name, std::string target_mesh_name, Corresp
     std::cout << "source EMD voxel num "<< source_volume_.voxel_num_ <<" DFI voxel num "<< source_volume_.dense_voxel_num_<<std::endl;
     std::cout << "target EMD voxel num "<< target_volume_.voxel_num_ <<" DFI voxel num "<< target_volume_.dense_voxel_num_<<std::endl;
 
-    // to make them well aligned 
-    /*
-    target_volume_.mass_center = source_volume_.mass_center;
-    for(int i=0; i < source_volume_.tet_anchor.size(); ++i)
-    {
-        target_volume_.tet_anchor[i].first = source_volume_.tet_anchor[i].first;
-    }
-    */
 }
 
 Morph::~Morph()
@@ -152,11 +144,11 @@ void Morph::initial()
 
 /* 
  * ===  FUNCTION  ======================================================================
- *         Name:  start_morph
+ *         Name:  start_basic_morph
  *  Description:  
  * =====================================================================================
  */
-void Morph::start_morph (Real step_size)
+void Morph::start_basic_morph (Real step_size)
 {
     int dim =  0.5 * 1.2 / dense_voxel_size_;
     MatrixX3r grid_vertex(8*dim*dim*dim, 3);
@@ -200,7 +192,7 @@ void Morph::start_morph (Real step_size)
         std::cout<< i <<"/"<<steps << " totally use "<<elapse<<"s"<<std::endl;
         grid_vec_.push_back(morph_grid);
     }
-}		/* -----  end of function start_morph  ----- */
+}		/* -----  end of function start_basic_morph  ----- */
 
 
 /* 
@@ -298,7 +290,8 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
                 target_vert = corresp_target_grid_points.row(index);
                 value = (1-t) * source_sampler.wsSample(openvdb::Vec3d(source_vert(0), source_vert(1), source_vert(2)))
                     + t * target_sampler.wsSample(openvdb::Vec3R(target_vert(0), target_vert(1), target_vert(2)));
-                accessor.setValue(xyz, value);
+                if(value < 0.1 && value > -0.1)
+                    accessor.setValue(xyz, value);
             }
 
     openvdb::tools::signedFloodFill(morph_grid->tree());
