@@ -34,7 +34,6 @@ Morph::Morph(std::string source_mesh_name, std::string target_mesh_name, Corresp
 {
     /*
     source_volume_ = VolumeObject(source_mesh_name, voxel_size, dense_voxel_size);
-    target_volume_ = VolumeObject(target_mesh_name, voxel_size, dense_voxel_size);
     */
 
     source_volume_.initial(source_mesh_name, voxel_size, dense_voxel_size);
