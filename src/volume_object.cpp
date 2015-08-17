@@ -60,7 +60,8 @@ VolumeObject::~VolumeObject()
 //generate volume from mesh
 void VolumeObject::initial_volume()
 {
-	read_mesh();
+    // if resize, if output mesh
+	read_mesh(false, false);
 	grid = openvdb::FloatGrid::create(2.0);
 	openvdb::math::Transform::Ptr grid_transform = openvdb::math::Transform::createLinearTransform(transform_scale_);
 	grid->setTransform(grid_transform);
@@ -389,6 +390,7 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
     inter_corresp_points = MatrixX3r(dense_voxel_num, 3);
 
     Real weight = 10.0;
+    Real center_neighbour_weight = 1.0;
 
     // with one anchor point
     // construct A
@@ -411,7 +413,7 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
         tet_triplet_list.push_back(MyTriplet(3*tet_num, mass_center_voxel_index, weight));
         for(int i=0; i < tet_anchor.size(); ++i)
         {
-            tet_triplet_list.push_back(MyTriplet(3*tet_num+1+i, tet_anchor[i].second, weight));
+            tet_triplet_list.push_back(MyTriplet(3*tet_num+1+i, tet_anchor[i].second, center_neighbour_weight));
         }
 
         tet_matrix_.setFromTriplets(tet_triplet_list.begin(), tet_triplet_list.end());
@@ -460,7 +462,7 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
 
     for(int i=0; i < tet_anchor.size(); ++i)
     {
-        B.row(3*tet_num+1+i) = weight * tet_anchor[i].first;
+        B.row(3*tet_num+1+i) = center_neighbour_weight * tet_anchor[i].first;
     }
 
     B = tet_matrix_.transpose() * B;

@@ -50,6 +50,7 @@ public:
     MatrixX3r mDenseVoxelPosition;
     Vector3r mass_center; // object center
     int mass_center_voxel_index;
+    // keep solver stability
     std::vector<std::pair<Vector3r, int> > tet_anchor;
 
     MatrixXr distance_vector_field;

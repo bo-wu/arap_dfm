@@ -49,11 +49,13 @@ Morph::Morph(std::string source_mesh_name, std::string target_mesh_name, Corresp
     std::cout << "target EMD voxel num "<< target_volume_.voxel_num_ <<" DFI voxel num "<< target_volume_.dense_voxel_num_<<std::endl;
 
     // to make them well aligned 
+    /*
     target_volume_.mass_center = source_volume_.mass_center;
     for(int i=0; i < source_volume_.tet_anchor.size(); ++i)
     {
         target_volume_.tet_anchor[i].first = source_volume_.tet_anchor[i].first;
     }
+    */
 }
 
 Morph::~Morph()
@@ -225,6 +227,22 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     std::cout<<"source ";
     source_volume_.find_intermedium_points(source_intermedium, t);
 
+    MatrixX3r target_intermedium;
+    std::cout <<"target ";
+    target_volume_.find_intermedium_points(target_intermedium, 1-t);
+
+    //====== align intermedium points 
+    RowVector3r average_offset = RowVector3r::Zero(3);
+
+    for(int i=0; i < source_volume_.mAnchors.size(); ++i)
+    {
+        average_offset += target_intermedium.row(target_volume_.constraint_index_(i)) - source_intermedium.row(source_volume_.constraint_index_(i));
+    }
+    average_offset /= source_volume_.mAnchors.size();
+
+    source_intermedium.rowwise() += average_offset;
+    //====== end alignment 
+    //
 #ifdef BASIC_DEBUG_
     std::string source_inter_name = "./output_result_data/source_intermedium" + std::to_string(int(10*t));
     matrix_to_point_cloud_file(source_intermedium, source_inter_name);
@@ -241,9 +259,6 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
 //    {
 
     //backwards(target) mapping
-    MatrixX3r target_intermedium;
-    std::cout <<"target ";
-    target_volume_.find_intermedium_points(target_intermedium, 1-t);
     std::cout<<"backwards to target ";
 
 #ifdef BASIC_DEBUG_

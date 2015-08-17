@@ -39,6 +39,7 @@ typedef Eigen::Matrix<Real, 3, 1> Vector3r;
 typedef Eigen::Matrix<int, 3, 1> Vector3i;
 typedef Eigen::Matrix<int, 4, 1> Vector4i;
 typedef Eigen::Matrix<Real, 1, Eigen::Dynamic> RowVectorXr;
+typedef Eigen::Matrix<Real, 1, 3> RowVector3r;
 typedef Eigen::SparseMatrix<Real> SpMat;
 typedef Eigen::SparseVector<Real> SpVec;
 typedef Eigen::Triplet<Real> MyTriplet;
