@@ -15,6 +15,7 @@
 #ifndef DEF_TYPES_H_
 #define DEF_TYPES_H_
 #include <vector>
+#include <omp.h>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <Eigen/Geometry>

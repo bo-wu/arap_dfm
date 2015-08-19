@@ -62,9 +62,6 @@ void ThinPlateSpline::compute_tps(const MatrixX3r &control_points, const MatrixX
 
     Real alpha = 0.0;
 
-#ifdef PARALLEL_OMP_
-#endif
-#pragma omp parallel for collapse(2)
     for(int i=0; i < v_num; ++i)
     {
         for(int j=i+1; j < v_num; ++j)
