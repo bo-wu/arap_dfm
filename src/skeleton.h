@@ -29,10 +29,11 @@ public:
     int num_branch;
     // not matched skeleton, merge to matched
     // <not_matched, matched>
-    std::vector<MatrixX3r> skel_branch_points; // points on skeleton
+    std::vector<MatrixX3r> skel_branch_points; // points on skeleton, used as anchors
     std::vector<std::pair<int, int> > merged_branch; //used for merge voxels
     // each face point and it belongs to which skeleton branch
-    MatrixX3r mesh_face_points;
+    // to segment voxels
+    MatrixX3r mesh_face_points; 
     VectorXi mesh_face_point_tag;
 };
 

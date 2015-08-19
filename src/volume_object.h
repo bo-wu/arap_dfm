@@ -16,6 +16,7 @@
 #include <string>
 #include <openvdb/openvdb.h>
 #include "kdtree.h"
+#include "skeleton.h"
 #include "def_types.h"
 
 class VolumeObject
@@ -34,6 +35,8 @@ public:
     //tetrahedron index
     std::vector<Vector4i> mTetIndex;
     std::vector<std::pair<Matrix3r, Matrix3r> > mTetTransform;
+
+    std::vector<std::vector<int> > volume_part_index_;
 
     SpMat mLaplaceMatrix;
     Real transform_scale_;
@@ -63,6 +66,7 @@ public:
     void initial(std::string name, Real transform_scale=0.02, Real dense_transform_scale=0.01);
 	void initial_volume();
     void initial_dense_volume();
+    void segment_volume_voxel(Skeleton &skel);
 
 	//compute vector field on anchor points
     void construct_laplace_matrix();

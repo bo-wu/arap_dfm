@@ -563,6 +563,50 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
 }		/* -----  end of function find_intermedium_points  ----- */
 
 
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  segment_volume_voxel
+ *  Description:  segment voxel using skeleton info
+ * =====================================================================================
+ */
+void VolumeObject::segment_volume_voxel(Skeleton &skel)
+{
+    int num_segment = skel.mesh_face_point_tag.maxCoeff() + 1;
+    for(int i=0; i < num_segment; ++i)
+    {
+        volume_part_index_.push_back(std::vector<int>());
+    }
+
+    kd_tree_type segment_kdtree(3, skel.mesh_face_points);
+    segment_kdtree.index->buildIndex();
+    long int outIndex;
+    Real outDistance;
+    Vector3r query_voxel;
+    for(int i=0; i < mVoxelPosition.size(); ++i)
+    {
+        query_voxel = mVoxelPosition.row(i);
+        segment_kdtree.query(query_voxel.data(), 1, &outIndex, &outDistance);
+        volume_part_index_[skel.mesh_face_point_tag(outIndex)].push_back(i);
+    }
+
+    //merge two part (used for mass transport)
+    std::vector<int> temp1, temp2;
+    for (int i=0; i < skel.merged_branch.size(); ++i)
+    {
+        int p1, p2;
+        p1 = skel.merged_branch[i].first;
+        p2 = skel.merged_branch[i].second;
+        temp1 = volume_part_index_[p1];
+        temp2 = volume_part_index_[p2];
+        volume_part_index_[p1].insert(volume_part_index_[p1].end(), temp2.begin(), temp2.end());
+        volume_part_index_[p2].insert(volume_part_index_[p2].end(), temp1.begin(), temp1.end());
+    }
+
+}		/* -----  end of function seperate_volume_voxel  ----- */
+
+
+
 ///////////////////////////////////////////
 //read_mesh
 void VolumeObject::read_mesh(bool resize, bool b_out)
