@@ -23,7 +23,7 @@
 #include "morph.h"
 #include "util.h"
 
-//#define BASIC_DEBUG_
+#define BASIC_DEBUG_
 
 Morph::Morph(std::string source_mesh_name, std::string target_mesh_name, CorrespType corresp_pairs, Real source_voxel_size, Real source_dense_voxel_size, Real target_voxel_size, Real target_dense_voxel_size) : 
     source_mesh_name_(source_mesh_name),
@@ -76,17 +76,17 @@ void Morph::initial()
     start = std::clock();
 
     //could be parallel
-#pragma omp parallel sections
-{
-    #pragma omp section
-    {
+//#pragma omp parallel sections
+//{
+//    #pragma omp section
+//    {
     source_volume_.calc_vector_field();  
-    }
-    #pragma omp section
-    {
+//    }
+//    #pragma omp section
+//    {
     target_volume_.calc_vector_field();
-    }
-}
+//    }
+//}
 
     EMD emd_flow;
     emd_flow.construct_correspondence(source_volume_, target_volume_);

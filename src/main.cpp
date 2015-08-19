@@ -21,22 +21,32 @@
 #include "dense_correspondence.h"
 #include "thin_plate_spline.h"
 #include "morph.h"
+#include "skeleton.h"
 
 int main(int argc, char** argv)
 {
-    if (argc <= 3)
+    if (argc <= 2)
     {
-        std::cerr << "Not enough parameters, should run like\n ./morph source_mesh_name target_mesh_name anchor_file\n";
+        std::cerr << "Not enough parameters, should run like\n ./morph source_mesh_name target_mesh_name\n";
         return 0;
     }
 
     /*  
+    */
     std::string source_name = argv[1];
     std::string target_name = argv[2];
     std::size_t found = target_name.find_last_of("/\\");
-    std::string anchor_file_name = source_name.substr(0, source_name.size()-4) + "_" + target_name.substr(found+1, target_name.size()-found-5) + ".anchors";
-    */
+    //std::string anchor_file_name = source_name.substr(0, source_name.size()-4) + "_" + target_name.substr(found+1, target_name.size()-found-5) + ".anchors";
+    std::string skel_pair_file_name = source_name.substr(0, source_name.size()-4) + "_" + target_name.substr(found+1, target_name.size()-found-5) + ".brp";
 
+    Skeleton source_skel, target_skel;
+    source_skel.init(argv[1]);
+    target_skel.init(argv[2]);
+    SkeletonPair skel_pair;
+    skel_pair.read_match_info(source_skel, target_skel, skel_pair_file_name);
+
+
+/*  
     std::ifstream input_anchor(argv[3]);
     if(!input_anchor.is_open())
     {
@@ -81,11 +91,14 @@ int main(int argc, char** argv)
 
     input_anchor.close();
 
-    Morph morph(argv[1], argv[2], corresp_pairs, 0.02, 0.01, 0.02, 0.01);
-//    morph.source_volume_.write_grid(argv[1]);
+    Morph morph(argv[1], argv[2], skel_pair.corresp_skel_points, 0.018, 0.01, 0.009, 0.01);
+    //Morph morph(argv[1], argv[2], corresp_pairs, 0.02, 0.01, 0.02, 0.01);
+    //morph.source_volume_.write_grid(argv[1]);
+    //morph.target_volume_.write_grid(argv[2]);
     morph.initial();
-    morph.start_basic_morph(0.1);
+    morph.start_basic_morph(0.25);
     morph.write_sequence();
+*/
     
  	return 0;
 }
