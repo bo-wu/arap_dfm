@@ -16,13 +16,26 @@
 #include <nanoflann.hpp>
 #include "mass_transport.h"
 
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  construct_correspondence
+ *  Description:  
+ * =====================================================================================
+ */
+void PartMassTransport::construct_correspondence(const VolumeObject &s, const VolumeObject &t, const SkeletonPair &sp)
+{
+    network_simplex(s, t, sp);
+    find_correspondence(s, t);
+}		/* -----  end of function construct_correspondence  ----- */
+
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  network_simplex
  *  Description:  
  * =====================================================================================
  */
-void PartMassTransport::network_simplex(const VolumeObject &source, const VolumeObject &target, SkeletonPair &skel_pair)
+void PartMassTransport::network_simplex(const VolumeObject &source, const VolumeObject &target, const SkeletonPair &skel_pair)
 {
     flow_matrix_ = SpMat(source.voxel_num_, target.voxel_num_);
 
@@ -222,3 +235,4 @@ void PartMassTransport::find_correspondence(const VolumeObject &s, const VolumeO
 
 
 }		/* -----  end of function find_correspondence  ----- */
+

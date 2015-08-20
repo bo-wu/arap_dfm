@@ -38,13 +38,11 @@ struct Morph
     CorrespType corresp_pairs_;
 
     //MatrixX3r intermedia_from_source, intermedia_from_target;
-    void initial();
+    void initial(bool part_morph=false);
 	void start_basic_morph(Real step_size=0.01);
     void interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &grid_vertex, Real t);
     
-    void morphing_by_skeleton_correspondence(Real step_size=0.01);
-    void morphing_by_part(Real step_size=0.01);
-
+    void start_morph_by_part(Real step_size=0.01);
 
     void write_sequence(std::string grid_name="");
 
