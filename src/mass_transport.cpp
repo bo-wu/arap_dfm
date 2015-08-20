@@ -196,8 +196,8 @@ void PartMassTransport::find_correspondence(const VolumeObject &s, const VolumeO
     corresp_source_target_ *= s.voxel_num_;
     corresp_target_source_ *= t.voxel_num_;
 
-    std::cout << "source control point num " << source_control.size()<<std::endl;
-    std::cout << "target control point num " << target_control.size()<<std::endl;
+    std::cout << "part source control point num " << source_control.size()<<std::endl;
+    std::cout << "part target control point num " << target_control.size()<<std::endl;
 
 #ifdef BASIC_DEBUG_
     std::ofstream output_source_control_index("part_source_control_index.dat");

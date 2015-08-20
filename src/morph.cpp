@@ -39,8 +39,19 @@ Morph::Morph(std::string source_mesh_name, std::string target_mesh_name, Corresp
     target_volume_ = VolumeObject(target_mesh_name, voxel_size, dense_voxel_size);
     */
 
+    //======== initial skeleton info ========
+    source_skel_.init(source_mesh_name);
+    target_skel_.init(target_mesh_name);
+    std::size_t found = target_mesh_name.find_last_of("/\\");
+    std::string skel_pair_file_name = source_mesh_name.substr(0, source_mesh_name.size()-4) + "_" + target_mesh_name.substr(found+1, target_mesh_name.size()-found-5) + ".brp";
+    skel_pair_.read_match_info(source_skel_, target_skel_, skel_pair_file_name);
+
     source_volume_.initial(source_mesh_name, source_voxel_size, source_dense_voxel_size);
     target_volume_.initial(target_mesh_name, target_voxel_size, target_dense_voxel_size);
+
+    // ========================================
+    // add more anchor points from skeleton
+    corresp_pairs_.insert(corresp_pairs_.end(), skel_pair_.corresp_skel_points.begin(), skel_pair_.corresp_skel_points.end());
 
     for(int i=0; i < corresp_pairs_.size(); ++i)
     {

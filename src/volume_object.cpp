@@ -583,7 +583,7 @@ void VolumeObject::segment_volume_voxel(Skeleton &skel)
     long int outIndex;
     Real outDistance;
     Vector3r query_voxel;
-    for(int i=0; i < mVoxelPosition.size(); ++i)
+    for(int i=0; i < mVoxelPosition.rows(); ++i)
     {
         query_voxel = mVoxelPosition.row(i);
         segment_kdtree.query(query_voxel.data(), 1, &outIndex, &outDistance);
@@ -599,9 +599,27 @@ void VolumeObject::segment_volume_voxel(Skeleton &skel)
         p2 = skel.merged_branch[i].second;
         temp1 = volume_part_index_[p1];
         temp2 = volume_part_index_[p2];
+
+        volume_part_index_[p1].reserve(temp1.size()+temp2.size());
+        volume_part_index_[p2].reserve(temp1.size()+temp2.size());
+
         volume_part_index_[p1].insert(volume_part_index_[p1].end(), temp2.begin(), temp2.end());
         volume_part_index_[p2].insert(volume_part_index_[p2].end(), temp1.begin(), temp1.end());
     }
+
+    /*
+    // for debug
+    std::string output_basename = mesh_name.substr(0, mesh_name.size()-4);
+    for(int i=0; i < num_segment; ++i)
+    {
+        std::string name = output_basename + "_" + std::to_string(i) + ".vpi";
+        std::ofstream output_voxel_part(name);
+        for (int j=0; j < volume_part_index_[i].size(); ++j)
+        {
+            output_voxel_part << volume_part_index_[i][j]<<" ";
+        }
+    }
+    */
 
 }		/* -----  end of function seperate_volume_voxel  ----- */
 
