@@ -88,17 +88,17 @@ void Morph::initial(bool part_morph)
     start = std::clock();
 
     //could be parallel
-//#pragma omp parallel sections
-//{
-//    #pragma omp section
-//    {
-//  source_volume_.calc_vector_field();  
-//    }
-//    #pragma omp section
-//    {
-//  target_volume_.calc_vector_field();
-//    }
-//}
+#pragma omp parallel sections
+{
+    #pragma omp section
+    {
+  source_volume_.calc_vector_field();  
+    }
+    #pragma omp section
+    {
+  target_volume_.calc_vector_field();
+    }
+}
 
     EMD emd_flow;
     PartMassTransport pmt_flow;
