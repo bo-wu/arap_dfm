@@ -88,17 +88,21 @@ void Morph::initial(bool part_morph)
     start = std::clock();
 
     //could be parallel
-#pragma omp parallel sections
-{
-    #pragma omp section
-    {
-  source_volume_.calc_vector_field();  
-    }
-    #pragma omp section
-    {
-  target_volume_.calc_vector_field();
-    }
-}
+//#pragma omp parallel sections
+//{
+//    #pragma omp section
+//    {
+    std::cout<<"calculating source harmonic field ... "<<std::flush;
+    source_volume_.calc_vector_field();  
+    std::cout<<"done!\n";
+//    }
+//    #pragma omp section
+//    {
+    std::cout<<"calculating target harmonic field ... "<<std::flush;
+    target_volume_.calc_vector_field();
+    std::cout<<"done!\n";
+//    }
+//}
 
     EMD emd_flow;
     PartMassTransport pmt_flow;
@@ -146,6 +150,7 @@ void Morph::initial(bool part_morph)
 
 #ifdef BASIC_DEBUG_
     std::string path = source_mesh_name_.substr(0, source_mesh_name_.find_last_of("\\/")+1);
+    path = path + "output/";
     std::ofstream output_source_dist(path+"source_dist.dat");
     output_source_dist << source_volume_.distance_vector_field;
     output_source_dist.close();

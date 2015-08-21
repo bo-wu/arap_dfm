@@ -37,13 +37,13 @@ int main(int argc, char** argv)
 /*  
     corresp_pairs = read_anchor_file(argv[3]);
 */
-    Morph morph(argv[1], argv[2], corresp_pairs, 0.018, 0.01, 0.009, 0.01);
+    Morph morph(argv[1], argv[2], corresp_pairs, 0.018, 0.01, 0.011, 0.006);
     //Morph morph(argv[1], argv[2], corresp_pairs, 0.02, 0.01, 0.02, 0.01);
-    //morph.source_volume_.write_grid(argv[1]);
-    //morph.target_volume_.write_grid(argv[2]);
+    morph.source_volume_.write_grid(argv[1]);
+    morph.target_volume_.write_grid(argv[2]);
     
-    morph.initial(true);
-//    morph.start_basic_morph(0.1);
+    morph.initial();
+//    morph.start_basic_morph(0.2);
 //    morph.write_sequence();
     
  	return 0;

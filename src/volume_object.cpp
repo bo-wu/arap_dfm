@@ -135,14 +135,18 @@ void VolumeObject::initial_dense_volume()
     ////use coarse version
     dense_transform_scale_ = transform_scale_;
     ////
+    // add more anchro to avoid solve failure
     for(int i=0; i < 3; ++i)
     {
         Vector3r v_voxel = mass_center;
-        for(int j=-1; j<=1; j+=2)
+        for(int j=-2; j<=2; j++)
         {
-            v_voxel(i) += j * 1 * dense_transform_scale_;
-            dense_voxel_kdtree.query(v_voxel.data(), 1, &outIndex, &outDistance);
-            tet_anchor.push_back(std::make_pair(mDenseVoxelPosition.row(outIndex), outIndex));
+            if(j != 0)
+            {
+                v_voxel(i) += j * dense_transform_scale_;
+                dense_voxel_kdtree.query(v_voxel.data(), 1, &outIndex, &outDistance);
+                tet_anchor.push_back(std::make_pair(mDenseVoxelPosition.row(outIndex), outIndex));
+            }
         }
     }
 

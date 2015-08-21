@@ -53,8 +53,11 @@ void Skeleton::init(std::string mesh_name)
     TriMesh::FaceVertexIter fv_it;
     OpenMesh::Vec3d face_center;
     int f_tag = 0;
+    int p = 0;
     while(input_branch_tris >> num_tris)
     {
+        std::ofstream output_part_verts(base_name+"_part"+std::to_string(p)+".obj");
+        ++p;
         for(int i=0; i < num_tris; ++i)
         {
             face_center = OpenMesh::Vec3d(0,0,0);
@@ -65,11 +68,15 @@ void Skeleton::init(std::string mesh_name)
                 face_center += mesh.point(*fv_it);
             }
             face_center /= 3.0;
-             
+
             mesh_face_points.row(f_index) << face_center[0], face_center[1], face_center[2];
             mesh_face_point_tag(f_index) = f_tag;
+
+
+            output_part_verts <<"v "<< face_center[0]<<" "<<face_center[1]<<" "<<face_center[2]<<std::endl;
         }
         f_tag++; // group tag
+        output_part_verts.close();
     }
 
     input_branch_tris.close();
@@ -130,7 +137,7 @@ void SkeletonPair::read_match_info(Skeleton &ss, Skeleton &ts, std::string name)
     std::ifstream input_match_pairs(name);
     if(!input_match_pairs.is_open())
     {
-        std::cerr << "open matche skeleton branch file error\n";
+        std::cerr << "open skeleton branch matched file error\n";
         input_match_pairs.close();
         exit(-1);
     }
