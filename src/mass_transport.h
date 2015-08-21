@@ -25,7 +25,7 @@ public:
     void network_simplex(const VolumeObject &s, const VolumeObject &t, const SkeletonPair &sp);
     void part_network_simplex(const VolumeObject &s, const VolumeObject &t, int source_part_index, int target_part_index);
 
-    void find_correspondence(const VolumeObject &s, const VolumeObject &t, const Real threshold=0.001);
+    void find_correspondence(const VolumeObject &s, const VolumeObject &t, const Real threshold=1.001);
     
     MatrixX3r source_control_points_;
     MatrixX3r corresp_source_target_;

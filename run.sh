@@ -8,6 +8,7 @@ cd ..
 #bin/morph data/382.off data/382.off
 #bin/morph data/399.off data/389.off
 
+#bin/morph ./model_data/aligned_354_plant/354.off ./model_data/aligned_354_plant/plant.OBJ
 bin/morph ./model_data/aligned_354_plant/354.off ./model_data/aligned_354_plant/plant.OBJ
 
 #bin/morph model_data/382.off model_data/399.off ./model_data/382_399.acr

@@ -106,8 +106,10 @@ void Morph::initial(bool part_morph)
 
     if(part_morph)
     {   
+        source_volume_.segment_volume_voxel(source_skel_);
+        target_volume_.segment_volume_voxel(target_skel_);
         pmt_flow.construct_correspondence(source_volume_, target_volume_, skel_pair_);
-
+        
         source_target_tps.compute_tps(pmt_flow.source_control_points_, pmt_flow.corresp_source_target_);
         source_target_tps.interpolate(source_volume_.mDenseVoxelPosition, corresp_S_T_);
         source_volume_.calc_tetrahedron_transform(corresp_S_T_);
@@ -155,16 +157,18 @@ void Morph::initial(bool part_morph)
     {
         matrix_to_point_cloud_file(pmt_flow.corresp_source_target_, path+"source_pmt");
         matrix_to_point_cloud_file(pmt_flow.corresp_target_source_, path+"target_pmt");
+        matrix_to_point_cloud_file(corresp_S_T_, path+"source_pmt_corresp");
+        matrix_to_point_cloud_file(corresp_T_S_, path+"target_pmt_corresp");
     }
     else
     {
         matrix_to_point_cloud_file(emd_flow.corresp_source_target_, path+"source_emd");
         matrix_to_point_cloud_file(emd_flow.corresp_target_source_, path+"target_emd");
+        matrix_to_point_cloud_file(corresp_S_T_, path+"source_emd_corresp");
+        matrix_to_point_cloud_file(corresp_T_S_, path+"target_emd_corresp");
     }
     matrix_to_point_cloud_file(source_volume_.mDenseVoxelPosition, path+"source_voxel");
     matrix_to_point_cloud_file(target_volume_.mDenseVoxelPosition, path+"target_voxel");
-    matrix_to_point_cloud_file(corresp_S_T_, path+"source_corresp");
-    matrix_to_point_cloud_file(corresp_T_S_, path+"target_corresp");
 #endif
     
 }		/* -----  end of function initial  ----- */

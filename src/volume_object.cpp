@@ -27,6 +27,8 @@
 //#define MIN_QUAD_WITH_FIXED_CPP_DEBUG
 #include <igl/min_quad_with_fixed.h>
 
+#define BASIC_DEBUG_
+
 VolumeObject::VolumeObject(Real transform_scale) : transform_scale_(transform_scale)
 {
 }
@@ -577,6 +579,8 @@ void VolumeObject::segment_volume_voxel(Skeleton &skel)
     {
         volume_part_index_.push_back(std::vector<int>());
     }
+    voxel_part_index_ = VectorXi::Ones(voxel_num_);
+    voxel_part_index_ *= -1.0;
 
     kd_tree_type segment_kdtree(3, skel.mesh_face_points);
     segment_kdtree.index->buildIndex();
@@ -588,6 +592,7 @@ void VolumeObject::segment_volume_voxel(Skeleton &skel)
         query_voxel = mVoxelPosition.row(i);
         segment_kdtree.query(query_voxel.data(), 1, &outIndex, &outDistance);
         volume_part_index_[skel.mesh_face_point_tag(outIndex)].push_back(i);
+        voxel_part_index_(i) = skel.mesh_face_point_tag(outIndex);
     }
 
     //merge two part (used for mass transport)
@@ -607,7 +612,7 @@ void VolumeObject::segment_volume_voxel(Skeleton &skel)
         volume_part_index_[p2].insert(volume_part_index_[p2].end(), temp1.begin(), temp1.end());
     }
 
-    /*
+#ifdef BASIC_DEBUG_
     // for debug
     std::string output_basename = mesh_name.substr(0, mesh_name.size()-4);
     for(int i=0; i < num_segment; ++i)
@@ -619,7 +624,7 @@ void VolumeObject::segment_volume_voxel(Skeleton &skel)
             output_voxel_part << volume_part_index_[i][j]<<" ";
         }
     }
-    */
+#endif
 
 }		/* -----  end of function seperate_volume_voxel  ----- */
 

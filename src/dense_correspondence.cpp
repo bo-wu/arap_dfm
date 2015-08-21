@@ -121,9 +121,9 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t, cons
     {
         source_control_points_.row(i) = s.mVoxelPosition.row(source_control[i]);
         //the max voxel
-        //corresp_source_target_.row(i) = t.mVoxelPosition.row(corresp_s_t[i]);
+        corresp_source_target_.row(i) = t.mVoxelPosition.row(corresp_s_t[i]);
         //average voxel
-        corresp_source_target_.row(i) = average_source_target.row(source_control[i]);
+        //corresp_source_target_.row(i) = average_source_target.row(source_control[i]);
     }
     
     target_control_points_ = MatrixX3r(target_control.size(), 3);
@@ -132,15 +132,15 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t, cons
     {
         target_control_points_.row(i) = t.mVoxelPosition.row(target_control[i]);
         //the max voxel
-        //corresp_target_source_.row(i) = s.mVoxelPosition.row(corresp_t_s[i]);
+        corresp_target_source_.row(i) = s.mVoxelPosition.row(corresp_t_s[i]);
         //average voxel
-        corresp_target_source_.row(i) = average_target_source.row(target_control[i]);
+        //corresp_target_source_.row(i) = average_target_source.row(target_control[i]);
     }
 
-    // scale for it.value()
+    //ONLY for average!!!! scale for it.value()
+    /*
     corresp_source_target_ *= s.voxel_num_;
     corresp_target_source_ *= t.voxel_num_;
-    /*
     */
 
     std::cout << "source control point num " << source_control.size()<<std::endl;

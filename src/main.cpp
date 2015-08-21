@@ -42,9 +42,9 @@ int main(int argc, char** argv)
     //morph.source_volume_.write_grid(argv[1]);
     //morph.target_volume_.write_grid(argv[2]);
     
-///    morph.initial();
-///    morph.start_basic_morph(0.25);
-///    morph.write_sequence();
+    morph.initial(true);
+//    morph.start_basic_morph(0.1);
+//    morph.write_sequence();
     
  	return 0;
 }

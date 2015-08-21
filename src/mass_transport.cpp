@@ -16,7 +16,6 @@
 #include <nanoflann.hpp>
 #include "mass_transport.h"
 
-
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  construct_correspondence
@@ -42,6 +41,7 @@ void PartMassTransport::network_simplex(const VolumeObject &source, const Volume
     int num_flow = 2 * int(std::max(Real(source.voxel_num_) / Real(target.voxel_num_), Real(target.voxel_num_) / Real(source.voxel_num_))  * std::max(source.voxel_num_, target.voxel_num_) );
     total_flow_triplet_.reserve(num_flow);
 
+    std::cout<<"matched branch num "<<skel_pair.matched_branch.size()<<std::endl;
     for(int i=0; i < skel_pair.matched_branch.size(); ++i)
     {
         int source_part_index = skel_pair.matched_branch[i].first;
@@ -96,7 +96,7 @@ void PartMassTransport::part_network_simplex(const VolumeObject &source, const V
     ns.costMap(cost).supplyMap(supply).run();
     ns.flowMap(flow);
 
-    Real thres = 0.001;
+    Real thres = 0.01;
     int num_thres = int(thres * num_target_part_voxel);
     for(lemon::ListDigraph::ArcIt s(g); s!=lemon::INVALID; ++s )
     {
@@ -132,6 +132,7 @@ void PartMassTransport::find_correspondence(const VolumeObject &s, const VolumeO
     MatrixX3r average_source_target = MatrixX3r::Zero(s.voxel_num_, 3);
     MatrixX3r average_target_source = MatrixX3r::Zero(t.voxel_num_, 3);
 
+    int num_source_part_voxel, num_target_part_voxel;
     for(int i=0; i < flow_matrix_.outerSize(); ++i)
     {
         for(SpMat::InnerIterator it(flow_matrix_, i); it; ++it)
@@ -147,9 +148,12 @@ void PartMassTransport::find_correspondence(const VolumeObject &s, const VolumeO
                 max_each_col(it.col()) = it.value();
                 index_each_col(it.col()) = it.row();
             }
+            
+            num_source_part_voxel = s.volume_part_index_[s.voxel_part_index_(it.row())].size();
+            num_target_part_voxel = t.volume_part_index_[t.voxel_part_index_(it.col())].size();
 
-            average_source_target.row(it.row()) += it.value() * t.mVoxelPosition.row(it.col());
-            average_target_source.row(it.col()) += it.value() * s.mVoxelPosition.row(it.row());
+            average_source_target.row(it.row()) += it.value() * t.mVoxelPosition.row(it.col()) * num_source_part_voxel;
+            average_target_source.row(it.col()) += it.value() * s.mVoxelPosition.row(it.row()) * num_target_part_voxel;
         }
     }
 
@@ -190,9 +194,9 @@ void PartMassTransport::find_correspondence(const VolumeObject &s, const VolumeO
     {
         source_control_points_.row(i) = s.mVoxelPosition.row(source_control[i]);
         // the max voxel
-        // corresp_source_target_.row(i) = t.mVoxelPosition.row(corresp_s_t[i]);
+        corresp_source_target_.row(i) = t.mVoxelPosition.row(corresp_s_t[i]);
         // average voxel
-        corresp_source_target_.row(i) = average_source_target.row(source_control[i]);
+        //corresp_source_target_.row(i) = average_source_target.row(source_control[i]);
     }
 
     target_control_points_ = MatrixX3r(target_control.size(), 3);
@@ -201,16 +205,18 @@ void PartMassTransport::find_correspondence(const VolumeObject &s, const VolumeO
     {
         target_control_points_.row(i) = t.mVoxelPosition.row(target_control[i]);
         // the max voxel
-        // corresp_target_source_.row(i) = s.mVoxelPosition.row(corresp_t_s[i]);
+        corresp_target_source_.row(i) = s.mVoxelPosition.row(corresp_t_s[i]);
         // average voxel
-        corresp_target_source_.row(i) = average_target_source.row(target_control[i]);
+        //corresp_target_source_.row(i) = average_target_source.row(target_control[i]);
     }
 
+    /*  
     corresp_source_target_ *= s.voxel_num_;
     corresp_target_source_ *= t.voxel_num_;
+    */
 
-    std::cout << "part source control point num " << source_control.size()<<std::endl;
-    std::cout << "part target control point num " << target_control.size()<<std::endl;
+    std::cout << "source (part morph) control point num " << source_control.size()<<std::endl;
+    std::cout << "target (part morph) control point num " << target_control.size()<<std::endl;
 
 #ifdef BASIC_DEBUG_
     std::ofstream output_source_control_index("part_source_control_index.dat");
