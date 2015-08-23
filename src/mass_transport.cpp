@@ -14,8 +14,11 @@
 #include <lemon/list_graph.h>
 #include <lemon/network_simplex.h>
 #include <nanoflann.hpp>
+#include <iostream>
+#include <fstream>
 #include "mass_transport.h"
 
+#define BASIC_DEBUG_
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  construct_correspondence
@@ -44,6 +47,7 @@ void PartMassTransport::network_simplex(const VolumeObject &source, const Volume
     std::cout<<"matched branch num "<<skel_pair.matched_branch.size()<<std::endl;
     for(int i=0; i < skel_pair.matched_branch.size(); ++i)
     {
+        std::cout<<"part network simplex "<<i;
         int source_part_index = skel_pair.matched_branch[i].first;
         int target_part_index = skel_pair.matched_branch[i].second;
         part_network_simplex(source, target, source_part_index, target_part_index);
@@ -70,6 +74,8 @@ void PartMassTransport::part_network_simplex(const VolumeObject &source, const V
     std::vector<int> target_volume_index = target.volume_part_index_[target_part_idx];
     int num_source_part_voxel = source_volume_index.size();
     int num_target_part_voxel = target_volume_index.size();
+
+    std::cout <<" source voxel "<< num_source_part_voxel<<" target voxel "<<num_target_part_voxel<<std::endl;
 
     for(int i=0; i < num_source_part_voxel; ++i)
     {
@@ -219,8 +225,10 @@ void PartMassTransport::find_correspondence(const VolumeObject &s, const VolumeO
     std::cout << "target (part morph) control point num " << target_control.size()<<std::endl;
 
 #ifdef BASIC_DEBUG_
-    std::ofstream output_source_control_index("part_source_control_index.dat");
-    std::ofstream output_source_control_target_index("part_source_control_target_index.dat");
+    std::string path = s.mesh_name.substr(0, s.mesh_name.find_last_of("\\/")+1);
+    path = path + "output/";
+    std::ofstream output_source_control_index(path+"part_source_control_index.dat");
+    std::ofstream output_source_control_target_index(path+"part_source_control_target_index.dat");
     for(int i=0; i < source_control.size(); ++i)
     {
         output_source_control_index << source_control[i]<<std::endl;
@@ -228,8 +236,8 @@ void PartMassTransport::find_correspondence(const VolumeObject &s, const VolumeO
     }
     output_source_control_index.close();
     output_source_control_target_index.close();
-    std::ofstream output_target_control_index("part_target_control_index.dat");
-    std::ofstream output_target_control_source_index("part_target_control_source_index.dat");
+    std::ofstream output_target_control_index(path+"part_target_control_index.dat");
+    std::ofstream output_target_control_source_index(path+"part_target_control_source_index.dat");
     for(int i=0; i < target_control.size(); ++i)
     {
         output_target_control_index << target_control[i] <<std::endl;

@@ -23,7 +23,7 @@
 #include "network_simplex_simple.h"
 #include "def_types.h"
 
-//#define BASIC_DEBUG_
+#define BASIC_DEBUG_
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -147,8 +147,10 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t, cons
     std::cout << "target control point num " << target_control.size()<<std::endl;
 
 #ifdef BASIC_DEBUG_
-    std::ofstream output_source_control_index("source_control_index.dat");
-    std::ofstream output_source_control_target_index("source_control_target_index.dat");
+    std::string path = s.mesh_name.substr(0, s.mesh_name.find_last_of("\\/")+1);
+    path = path + "output/";
+    std::ofstream output_source_control_index(path+"source_control_index.dat");
+    std::ofstream output_source_control_target_index(path+"source_control_target_index.dat");
     for(int i=0; i < source_control.size(); ++i)
     {
         output_source_control_index << source_control[i]<<std::endl;
@@ -156,8 +158,8 @@ void EMD::find_correspondence(const VolumeObject &s, const VolumeObject &t, cons
     }
     output_source_control_index.close();
     output_source_control_target_index.close();
-    std::ofstream output_target_control_index("target_control_index.dat");
-    std::ofstream output_target_control_source_index("target_control_source_index.dat");
+    std::ofstream output_target_control_index(path+"target_control_index.dat");
+    std::ofstream output_target_control_source_index(path+"target_control_source_index.dat");
     for(int i=0; i < target_control.size(); ++i)
     {
         output_target_control_index << target_control[i] <<std::endl;

@@ -125,12 +125,15 @@ void VolumeObject::initial_dense_volume()
         mass_center(i) = mDenseVoxelPosition.col(i).mean();
     }
 
-    // construct tetrahedron
     kd_tree_type dense_voxel_kdtree(3, mDenseVoxelPosition);
     dense_voxel_kdtree.index->buildIndex();
     long int outIndex;
     Real outDistance;
     dense_voxel_kdtree.query(mass_center.data(), 1, &outIndex, &outDistance);
+
+    // keep fixed
+    mass_center_voxel_index = outIndex;
+    mass_center = mDenseVoxelPosition.row(outIndex);
 
     ////use coarse version
     dense_transform_scale_ = transform_scale_;
@@ -140,19 +143,16 @@ void VolumeObject::initial_dense_volume()
     {
         Vector3r v_voxel = mass_center;
         for(int j=-2; j<=2; j++)
+        //for(int j=-1; j<=1; j++)
         {
             if(j != 0)
             {
-                v_voxel(i) += j * dense_transform_scale_;
+                v_voxel(i) = mass_center(i) + j * dense_transform_scale_;
                 dense_voxel_kdtree.query(v_voxel.data(), 1, &outIndex, &outDistance);
                 tet_anchor.push_back(std::make_pair(mDenseVoxelPosition.row(outIndex), outIndex));
             }
         }
     }
-
-    // keep fixed
-    mass_center_voxel_index = outIndex;
-    mass_center = mDenseVoxelPosition.row(outIndex);
 
     // construct tetrahedron
     std::vector< std::vector<int> > neighbor_index_3d; //3 directions

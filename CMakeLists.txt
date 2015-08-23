@@ -9,6 +9,7 @@ set(openmesh OpenMeshCore)
 set(igl igl armadillo)
 set(lemon emon)
 
+
 set(CMAKE_BUILD_TYPE Release)
 #set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")

@@ -149,11 +149,10 @@ void SkeletonPair::read_match_info(Skeleton &ss, Skeleton &ts, std::string name)
         matched_branch.push_back(std::make_pair(a, b));
     }
 
-    const int num_corresp_each_brach = 4;
     Vector3r s_branch_point, t_branch_point;
     for(int i=0; i < matched_branch.size(); ++i)
     {
-        for(int j=0; j < 10; j+=3)
+        for(int j=0; j < 10; j+=1)
         {
             s_branch_point = ss.skel_branch_points[matched_branch[i].first].row(j);
             t_branch_point = ts.skel_branch_points[matched_branch[i].second].row(j);

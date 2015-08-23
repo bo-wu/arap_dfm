@@ -151,12 +151,30 @@ void Morph::initial(bool part_morph)
 #ifdef BASIC_DEBUG_
     std::string path = source_mesh_name_.substr(0, source_mesh_name_.find_last_of("\\/")+1);
     path = path + "output/";
+
     std::ofstream output_source_dist(path+"source_dist.dat");
     output_source_dist << source_volume_.distance_vector_field;
     output_source_dist.close();
     std::ofstream output_target_dist(path+"target_dist.dat");
     output_target_dist << target_volume_.distance_vector_field;
     output_target_dist.close();
+
+    std::ofstream output_source_fixed_point(path+"source_fixed_point.obj");
+    output_source_fixed_point << "v "<< source_volume_.mass_center.transpose()<<std::endl;
+    for(int i=0; i < source_volume_.tet_anchor.size(); ++i)
+    {
+        output_source_fixed_point <<"v "<<(source_volume_.tet_anchor[i].first).transpose()<<std::endl;
+    }
+    output_source_fixed_point.close();
+    std::cout<<"fixed points num "<<source_volume_.tet_anchor.size()<<std::endl;
+
+    std::ofstream output_target_fixed_point(path+"target_fixed_point.obj");
+    output_target_fixed_point << "v "<< target_volume_.mass_center.transpose()<<std::endl;
+    for(int i=0; i < target_volume_.tet_anchor.size(); ++i)
+    {
+        output_target_fixed_point <<"v "<<(target_volume_.tet_anchor[i].first).transpose()<<std::endl;
+    }
+    output_target_fixed_point.close();
 
     if(part_morph)
     {
@@ -288,9 +306,11 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     std::cout<<"backwards to target ";
 
 #ifdef BASIC_DEBUG_
-    std::string source_inter_name = "./output_result_data/source_intermedium" + std::to_string(int(10*t));
+    std::string path = source_mesh_name_.substr(0, source_mesh_name_.find_last_of("\\/")+1);
+    path = path + "output/";
+    std::string source_inter_name = path + "source_intermedium" + std::to_string(int(10*t));
     matrix_to_point_cloud_file(source_intermedium, source_inter_name);
-    std::string target_inter_name = "./output_result_data/target_intermedium" + std::to_string(int(10*t));
+    std::string target_inter_name = path + "target_intermedium" + std::to_string(int(10*t));
     matrix_to_point_cloud_file(target_intermedium, target_inter_name);
 #endif
 

@@ -20,7 +20,7 @@
 class ThinPlateSpline
 {
 public:
-    ThinPlateSpline(Real lambda=0.5);
+    ThinPlateSpline(Real lambda=0.01);
     ~ThinPlateSpline() { }
     // control_points: input points
     // expected_positions: expect control points to be
