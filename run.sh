@@ -16,8 +16,8 @@ cd ..
 
 #bin/morph ./model_data/201_208/201.obj ./model_data/201_208/208.obj
 #bin/morph ./model_data/dino_397/Dino.off ./model_data/dino_397/397.obj
-bin/morph ./model_data/gecko_seal/gecko.obj ./model_data/gecko_seal/seal.obj
-#bin/morph ./model_data/gorilla_horse/gorilla2.obj ./model_data/gorilla_horse/horse9.off
+#bin/morph ./model_data/gecko_seal/gecko.obj ./model_data/gecko_seal/seal.obj
+bin/morph ./model_data/gorilla_horse/gorilla2.obj ./model_data/gorilla_horse/horse9.off
 
 
 

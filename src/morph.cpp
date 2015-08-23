@@ -281,15 +281,15 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     target_volume_.find_intermedium_points(target_intermedium, 1-t);
 
     //====== align intermedium points 
-    RowVector3r average_offset = RowVector3r::Zero(3);
+   // RowVector3r average_offset = RowVector3r::Zero(3);
 
-    for(int i=0; i < source_volume_.mAnchors.size(); ++i)
-    {
-        average_offset += target_intermedium.row(target_volume_.constraint_index_(i)) - source_intermedium.row(source_volume_.constraint_index_(i));
-    }
-    average_offset /= source_volume_.mAnchors.size();
+   // for(int i=0; i < source_volume_.mAnchors.size(); ++i)
+   // {
+   //     average_offset += target_intermedium.row(target_volume_.constraint_index_(i)) - source_intermedium.row(source_volume_.constraint_index_(i));
+   // }
+   // average_offset /= source_volume_.mAnchors.size();
 
-    source_intermedium.rowwise() += average_offset;
+   // source_intermedium.rowwise() += average_offset;
     //====== end alignment 
     //
  

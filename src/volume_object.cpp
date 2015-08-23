@@ -415,7 +415,7 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
     inter_corresp_points = MatrixX3r(dense_voxel_num, 3);
 
     Real weight = 10.0;
-    Real center_neighbour_weight = 1.0;
+    Real center_neighbour_weight = 0.001;
 
     // with one anchor point
     // construct A
