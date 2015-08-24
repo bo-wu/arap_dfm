@@ -216,10 +216,6 @@ void PartMassTransport::find_correspondence(const VolumeObject &s, const VolumeO
         //corresp_target_source_.row(i) = average_target_source.row(target_control[i]);
     }
 
-    /*  
-    corresp_source_target_ *= s.voxel_num_;
-    corresp_target_source_ *= t.voxel_num_;
-    */
 
     std::cout << "source (part morph) control point num " << source_control.size()<<std::endl;
     std::cout << "target (part morph) control point num " << target_control.size()<<std::endl;

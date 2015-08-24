@@ -36,6 +36,15 @@ public:
     std::vector<Vector4i> mTetIndex;
     std::vector<std::pair<Matrix3r, Matrix3r> > mTetTransform;
 
+    // voxel index not form tetrahedron
+    struct NearestTetVoxel
+    {
+        int voxel_index;
+        int nearest_neighbor_index; // nearest tetrahedron index
+        Vector3r relative_dist;
+    };
+    std::vector<NearestTetVoxel> non_tet_voxel_;
+
     // each volume part contains voxels
     std::vector<std::vector<int> > volume_part_index_;
     VectorXi voxel_part_index_; // indicate voxel belongs to which part

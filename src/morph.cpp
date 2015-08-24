@@ -47,7 +47,9 @@ Morph::Morph(std::string source_mesh_name, std::string target_mesh_name, Corresp
     std::string skel_pair_file_name = source_mesh_name.substr(0, source_mesh_name.size()-4) + "_" + target_mesh_name.substr(found+1, target_mesh_name.size()-found-5) + ".brp";
     skel_pair_.read_match_info(source_skel_, target_skel_, skel_pair_file_name);
 
+    std::cout<< "source volume";
     source_volume_.initial(source_mesh_name, source_voxel_size, source_dense_voxel_size);
+    std::cout<< "target volume";
     target_volume_.initial(target_mesh_name, target_voxel_size, target_dense_voxel_size);
 
     // ========================================
@@ -280,18 +282,18 @@ void Morph::interpolate_grids(openvdb::FloatGrid::Ptr &morph_grid, MatrixX3r &gr
     std::cout <<"target ";
     target_volume_.find_intermedium_points(target_intermedium, 1-t);
 
-    //====== align intermedium points 
-   // RowVector3r average_offset = RowVector3r::Zero(3);
+    ////====== align intermedium points 
+    RowVector3r average_offset = RowVector3r::Zero(3);
 
-   // for(int i=0; i < source_volume_.mAnchors.size(); ++i)
-   // {
-   //     average_offset += target_intermedium.row(target_volume_.constraint_index_(i)) - source_intermedium.row(source_volume_.constraint_index_(i));
-   // }
-   // average_offset /= source_volume_.mAnchors.size();
+    for(int i=0; i < source_volume_.mAnchors.size(); ++i)
+    {
+        average_offset += target_intermedium.row(target_volume_.constraint_index_(i)) - source_intermedium.row(source_volume_.constraint_index_(i));
+    }
+    average_offset /= source_volume_.mAnchors.size();
 
-   // source_intermedium.rowwise() += average_offset;
-    //====== end alignment 
-    //
+    source_intermedium.rowwise() += average_offset;
+    ////====== end alignment 
+    ////
  
     std::cout<<"backwards to source ";
     source_tps.compute_tps(source_intermedium, source_volume_.mDenseVoxelPosition);

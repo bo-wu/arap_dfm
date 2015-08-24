@@ -34,19 +34,26 @@ int main(int argc, char** argv)
     }
 
     std::vector<std::pair<Vector3r, Vector3r> > corresp_pairs;
-/*  
-    corresp_pairs = read_anchor_file(argv[3]);
-*/
+
+    std::string source_name = argv[1];
+    std::string target_name = argv[2];
+    std::size_t found = target_name.find_last_of("/\\");
+    std::string target_base = target_name.substr(found+1, target_name.size()-found-5);
+
+    std::string extra_anchor_name = source_name.substr(0, source_name.length()-4) + "_" + target_base + ".acr";
+    std::cout<<"anchor name "<<extra_anchor_name<<std::endl;
+    corresp_pairs = read_anchor_file(extra_anchor_name);
+
     //alladin_dengshen
-    //Morph morph(argv[1], argv[2], corresp_pairs, 0.0175, 0.015, 0.02, 0.015);
+    Morph morph(argv[1], argv[2], corresp_pairs, 0.0175, 0.008, 0.0175, 0.008);
     // 201-208 
     //Morph morph(argv[1], argv[2], corresp_pairs, 0.02, 0.01, 0.02, 0.01);
     //Dino-397
     //Morph morph(argv[1], argv[2], corresp_pairs, 0.015, 0.015, 0.0195, 0.015);
     // gecko-seal
-    Morph morph(argv[1], argv[2], corresp_pairs, 0.0145, 0.0145, 0.02, 0.02);
+    //Morph morph(argv[1], argv[2], corresp_pairs, 0.0145, 0.0145, 0.02, 0.02);
     // gorilla-horse
-    //Morph morph(argv[1], argv[2], corresp_pairs, 0.02, 0.02, 0.02, 0.02);
+    //Morph morph(argv[1], argv[2], corresp_pairs, 0.018, 0.018, 0.018, 0.018);
     //
     //
     //morph.source_volume_.write_grid(argv[1]);
@@ -61,20 +68,20 @@ int main(int argc, char** argv)
 
 
 
-
 std::vector<std::pair<Vector3r, Vector3r> > read_anchor_file(std::string anchor_file_name)
 {
     std::ifstream input_anchor(anchor_file_name);
+
+    std::vector<std::pair<Vector3r, Vector3r> > corresp_pairs;
+
     if(!input_anchor.is_open())
     {
-        std::cerr << "cannot open anchor file, exist!\n";
-        exit(-1);
+        std::cerr << "no extra anchors\n";
+        return corresp_pairs;
     }
     
     std::string line;
     Vector3r s_anchor, t_anchor;
-
-    std::vector<std::pair<Vector3r, Vector3r> > corresp_pairs;
 
     while(std::getline(input_anchor, line))
     {

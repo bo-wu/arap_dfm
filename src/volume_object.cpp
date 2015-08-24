@@ -138,12 +138,11 @@ void VolumeObject::initial_dense_volume()
     ////use coarse version
     dense_transform_scale_ = transform_scale_;
     ////
-    // add more anchro to avoid solve failure
+    // add more anchor to avoid solve failure
     for(int i=0; i < 3; ++i)
     {
         Vector3r v_voxel = mass_center;
-        for(int j=-2; j<=2; j++)
-        //for(int j=-1; j<=1; j++)
+        for(int j=-1; j<=1; j++)
         {
             if(j != 0)
             {
@@ -153,6 +152,10 @@ void VolumeObject::initial_dense_volume()
             }
         }
     }
+
+
+    std::vector<int> tet_voxel_index;
+    std::vector<int> non_tet_voxel_index;
 
     // construct tetrahedron
     std::vector< std::vector<int> > neighbor_index_3d; //3 directions
@@ -214,7 +217,43 @@ void VolumeObject::initial_dense_volume()
                         tet_index(3) = neighbor_index_3d[2].at(n);
                         mTetIndex.push_back(tet_index);
                     }
+            tet_voxel_index.push_back(k);
         }
+        else
+        {
+            non_tet_voxel_index.push_back(k);
+        }
+
+    }
+
+    // deal with voxels cannot form tet
+    if(non_tet_voxel_index.size() > 0)
+    {
+        non_tet_voxel_.reserve(non_tet_voxel_index.size());
+        MatrixX3r tet_voxels(tet_voxel_index.size(), 3);
+
+        for(int i=0; i < tet_voxel_index.size(); ++i)
+        {
+            tet_voxels.row(i) = mDenseVoxelPosition.row(tet_voxel_index[i]);
+        }
+
+        kd_tree_type non_tet_voxel_kdtree(3, tet_voxels);
+        non_tet_voxel_kdtree.index->buildIndex();
+        Vector3r temp_voxel_pos;
+        for(int i=0; i < non_tet_voxel_index.size(); ++i)
+        {
+            temp_voxel_pos = mDenseVoxelPosition.row(non_tet_voxel_index[i]);
+            non_tet_voxel_kdtree.query(temp_voxel_pos.data(), 1, &outIndex, &outDistance);
+
+            NearestTetVoxel ntv;
+            ntv.voxel_index = non_tet_voxel_index[i];
+            ntv.nearest_neighbor_index = tet_voxel_index[outIndex];
+            ntv.relative_dist = mDenseVoxelPosition.row(ntv.voxel_index) - mDenseVoxelPosition.row(ntv.nearest_neighbor_index);
+
+            non_tet_voxel_.push_back(ntv);
+        }
+
+        std::cout <<" non-tet voxel index num " <<non_tet_voxel_index.size() <<std::endl;
 
     }
 
@@ -412,6 +451,8 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
     int dense_voxel_num = mDenseVoxelPosition.rows();
     int tet_num = mTetIndex.size();
 
+    int num_non_tet_voxel = non_tet_voxel_.size();
+
     inter_corresp_points = MatrixX3r(dense_voxel_num, 3);
 
     Real weight = 10.0;
@@ -421,10 +462,10 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
     // construct A
     if(first_time_)
     {
-        tet_matrix_ = SpMat(3*tet_num+fixed_num, dense_voxel_num);
+        tet_matrix_ = SpMat(3*tet_num+fixed_num+num_non_tet_voxel, dense_voxel_num);
 
         std::vector<MyTriplet> tet_triplet_list;
-        tet_triplet_list.reserve(6*tet_num+fixed_num);
+        tet_triplet_list.reserve(6*tet_num+fixed_num+2*num_non_tet_voxel);
         for(int i=0; i < tet_num; ++i)
         {
             for(int j=0; j < 3; ++j)
@@ -441,6 +482,12 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
             tet_triplet_list.push_back(MyTriplet(3*tet_num+1+i, tet_anchor[i].second, center_neighbour_weight));
         }
 
+        for(int i=0; i < num_non_tet_voxel; ++i)
+        {
+            tet_triplet_list.push_back(MyTriplet(3*tet_num+fixed_num+i, non_tet_voxel_[i].voxel_index, 1.0));
+            tet_triplet_list.push_back(MyTriplet(3*tet_num+fixed_num+i, non_tet_voxel_[i].nearest_neighbor_index, -1.0));
+        }
+
         tet_matrix_.setFromTriplets(tet_triplet_list.begin(), tet_triplet_list.end());
 
         tet_normal_matrix = tet_matrix_.transpose() * tet_matrix_;
@@ -448,7 +495,7 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
         first_time_ = false;
     }
 
-    MatrixX3r B = MatrixX3r::Zero(3*tet_num+fixed_num, 3);
+    MatrixX3r B = MatrixX3r::Zero(3*tet_num+fixed_num+num_non_tet_voxel, 3);
 
     Quaternionr quat_I, quat_res;
     quat_I.setIdentity();
@@ -489,6 +536,11 @@ void VolumeObject::find_intermedium_points(MatrixX3r &inter_corresp_points, cons
     for(int i=0; i < tet_anchor.size(); ++i)
     {
         B.row(3*tet_num+1+i) = center_neighbour_weight * tet_anchor[i].first;
+    }
+
+    for(int i=0; i < num_non_tet_voxel; ++i)
+    {
+        B.row(3*tet_num+fixed_num+i) = non_tet_voxel_[i].relative_dist;
     }
 
     B = tet_matrix_.transpose() * B;
